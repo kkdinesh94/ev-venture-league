@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EV Venture League · Multiplayer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F3F6F2; --card:#FFFFFF; --ink:#131C17; --muted:#5C6963;
+    --line:#DBE2DA; --line-soft:#E8EDE7;
+    --green:#0B9E63; --green-deep:#076B44; --green-tint:#E2F4EB;
+    --amber:#B96A00; --amber-tint:#FBF1E2; --red:#C03A2B; --red-tint:#FBE9E6;
+    --violet:#6B4FA0; --violet-tint:#EEE9F7;
+    --font-d:'Space Grotesk',sans-serif; --font-b:'Inter',sans-serif; --font-m:'IBM Plex Mono',monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+  body{background:var(--paper);color:var(--ink);font-family:var(--font-b);font-size:14px;line-height:1.45}
+  header{border-bottom:2px solid var(--ink);background:var(--card);padding:14px 22px}
+  .hd{max-width:1360px;margin:0 auto;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:10px}
+  .eyebrow{font-family:var(--font-m);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--green-deep)}
+  h1{font-family:var(--font-d);font-weight:700;font-size:23px;letter-spacing:-.01em}
+  .qbadge{font-family:var(--font-m);font-size:12px;border:1.5px solid var(--ink);border-radius:999px;padding:5px 14px;background:var(--green-tint)}
+  .wrap{max-width:1360px;margin:0 auto;padding:20px 22px 70px}
+  .panel{background:var(--card);border:1.5px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:16px}
+  .panel-hd{display:flex;justify-content:space-between;align-items:baseline;padding:11px 14px;border-bottom:1px solid var(--line-soft);flex-wrap:wrap;gap:6px}
+  .panel-hd h2{font-family:var(--font-d);font-size:15px;font-weight:600}
+  .panel-hd .tag{font-family:var(--font-m);font-size:10.5px;color:var(--muted)}
+  .panel-bd{padding:14px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  @media(max-width:900px){.grid2,.grid3{grid-template-columns:1fr}}
+  button{font-family:var(--font-d);font-weight:600;cursor:pointer;border-radius:8px;transition:all .15s}
+  .btn{background:var(--ink);color:#fff;border:none;padding:11px 22px;font-size:14px}
+  .btn:hover{background:var(--green-deep)}
+  .btn.big{font-size:16px;padding:14px 30px}
+  .btn.ghost{background:var(--card);color:var(--ink);border:1.5px solid var(--line);padding:8px 16px;font-size:12.5px}
+  .btn.ghost:hover{border-color:var(--green);color:var(--green-deep)}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .btn.danger{background:var(--red)}
+  .btn.tiny{padding:4px 10px;font-size:11px}
+  input,select,textarea{font-family:var(--font-b);font-size:13px;border:1.5px solid var(--line);border-radius:6px;padding:7px 9px;background:#fff}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--green);outline-offset:1px}
+  input[type=number]{font-family:var(--font-m)}
+  label.f{display:block;font-family:var(--font-m);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th{font-family:var(--font-m);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:right;padding:5px 7px;border-bottom:1.5px solid var(--line)}
+  th:first-child,td:first-child{text-align:left}
+  td{padding:5px 7px;border-bottom:1px solid var(--line-soft);text-align:right;font-family:var(--font-m);font-size:11.5px}
+  td:first-child{font-family:var(--font-b);font-weight:600;font-size:12.5px}
+  tr.total td{border-top:2px solid var(--ink);font-weight:600}
+  .teamdot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:7px;vertical-align:-1px}
+  .pill{font-family:var(--font-m);font-size:10.5px;border-radius:999px;padding:3px 10px}
+  .pill.ok{background:var(--green-tint);color:var(--green-deep)}
+  .pill.wait{background:var(--amber-tint);color:var(--amber)}
+  .pill.bot{background:var(--violet-tint);color:var(--violet)}
+  .pill.warnp{background:var(--red-tint);color:var(--red)}
+  .teamrow{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1.5px solid var(--line-soft);border-radius:8px;padding:11px 13px;margin-bottom:8px;background:#fff;flex-wrap:wrap}
+  .teamrow:hover{border-color:var(--green)}
+  .tname{font-family:var(--font-d);font-weight:600;font-size:15px}
+  .muted{color:var(--muted)}
+  .mono{font-family:var(--font-m)}
+  .small{font-size:11.5px}
+  .notice{font-size:12px;color:var(--amber);background:var(--amber-tint);border-radius:6px;padding:7px 10px;margin-bottom:10px;display:none}
+  .notice.show{display:block}
+  .newsline{font-size:12.5px;padding:6px 0;border-bottom:1px dashed var(--line-soft)}
+  .newsline b{font-family:var(--font-d)}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  @media(max-width:700px){.kpis{grid-template-columns:1fr 1fr}}
+  .kpi{background:var(--paper);border-radius:8px;padding:9px;text-align:center}
+  .kpi .k-l{font-family:var(--font-m);font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+  .kpi .k-v{font-family:var(--font-d);font-weight:700;font-size:18px;margin-top:2px}
+  .modelcard{border:1.5px solid var(--line);border-radius:9px;padding:12px;margin-bottom:12px;background:#fff}
+  .modelcard.editing{border-color:var(--green)}
+  .mc-hd{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+  .mc-hd .nm{font-family:var(--font-d);font-weight:600;font-size:15px}
+  .cfgrow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+  @media(max-width:760px){.cfgrow{grid-template-columns:1fr 1fr}}
+  .cfgrow select{width:100%;font-size:12px}
+  .addgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:8px}
+  @media(max-width:760px){.addgrid{grid-template-columns:1fr 1fr}}
+  .addchk{display:flex;align-items:center;gap:6px;font-size:11.5px;border:1px solid var(--line-soft);border-radius:6px;padding:5px 7px;cursor:pointer}
+  .addchk.dis{opacity:.4;cursor:not-allowed}
+  .addchk input{accent-color:var(--green)}
+  .qstrip{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+  .qchip{font-family:var(--font-m);font-size:10.5px;border-radius:6px;padding:4px 8px;background:var(--paper)}
+  .qchip b{font-size:11.5px}
+  .chip{font-family:var(--font-m);font-size:11px;border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:5px 12px;cursor:pointer}
+  .allocgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+  @media(max-width:700px){.allocgrid{grid-template-columns:repeat(3,1fr)}}
+  .pl-line{display:flex;justify-content:space-between;font-family:var(--font-m);font-size:12px;padding:3.5px 0;border-bottom:1px dashed var(--line-soft)}
+  .pl-line .l{color:var(--muted)}
+  .pl-line.strong{border-bottom:1.5px solid var(--ink)}
+  .pl-line.strong .l,.pl-line.strong .v{color:var(--ink);font-weight:600}
+  .v.neg{color:var(--red)} .v.pos{color:var(--green-deep)}
+  .tabs{display:flex;gap:6px;flex-wrap:wrap;padding:10px 14px 0}
+  .tab{font-family:var(--font-m);font-size:11.5px;border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:6px 13px;cursor:pointer}
+  .tab.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .sharebarrow{display:flex;height:26px;border-radius:6px;overflow:hidden;border:1.5px solid var(--ink);margin:4px 0 10px}
+  .sbseg{height:100%;display:flex;align-items:center;justify-content:center;color:#fff;font-family:var(--font-m);font-size:10px;min-width:0;overflow:hidden;white-space:nowrap}
+  .cover{position:fixed;inset:0;background:var(--ink);color:#fff;display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;z-index:50;text-align:center;padding:30px}
+  .cover.show{display:flex}
+  .cover h2{font-family:var(--font-d);font-size:30px}
+  .cover p{color:#B9C6BE;max-width:440px}
+  .podium{display:flex;gap:14px;align-items:flex-end;justify-content:center;margin:26px 0;flex-wrap:wrap}
+  .pod{border-radius:10px 10px 0 0;color:#fff;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;padding:12px;min-width:130px}
+  .pod .p-nm{font-family:var(--font-d);font-weight:700;font-size:16px}
+  .pod .p-sc{font-family:var(--font-m);font-size:12px;opacity:.85}
+  .spark{vertical-align:middle}
+  .setuprow{display:flex;gap:10px;align-items:center;margin-bottom:9px;flex-wrap:wrap}
+  .warn{color:var(--red);font-size:11.5px;font-family:var(--font-m)}
+  .foot{font-size:11px;color:var(--muted);max-width:1360px;margin:0 auto;padding:0 22px 40px}
+  textarea.save{width:100%;height:110px;font-family:var(--font-m);font-size:10.5px;border:1.5px solid var(--line);border-radius:8px;padding:8px}
+  .seggrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:900px){.seggrid{grid-template-columns:1fr}}
+  .segcard{border:1.5px solid var(--line);border-radius:10px;padding:13px;background:#fff}
+  .segcard h3{font-family:var(--font-d);font-size:15px;margin-bottom:2px}
+  .segcard .meta{font-family:var(--font-m);font-size:10.5px;color:var(--muted);margin-bottom:8px}
+  .segcard ul{margin:6px 0 8px 16px;font-size:12.5px}
+  .segcard li{margin-bottom:3px}
+  .stars td{font-size:12px;letter-spacing:1px;color:var(--amber)}
+  .stars td:first-child{font-family:var(--font-m);font-size:10.5px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+  .stars td{padding:2px 6px;border-bottom:none}
+  .dealtag{display:inline-block;font-size:11px;background:var(--red-tint);color:var(--red);border-radius:5px;padding:2px 7px;margin:2px 3px 0 0}
+  .agenda{background:var(--violet-tint);border-radius:8px;padding:9px 12px;font-size:12px;margin-bottom:12px}
+  .agenda b{font-family:var(--font-d)}
+  .sect{font-family:var(--font-d);font-size:14px;margin:20px 0 8px;padding-top:14px;border-top:1.5px solid var(--line-soft)}
+  .sect:first-of-type{border-top:none;padding-top:0;margin-top:6px}
+  .techcard{border:1.5px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:8px;background:#fff;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center}
+  .techcard .tn{font-family:var(--font-d);font-weight:600;font-size:13px}
+  .techcard.owned{border-color:var(--green);background:var(--green-tint)}
+  .techcard.progress{border-color:var(--amber)}
+  .contract{border:1.5px dashed var(--violet);border-radius:8px;padding:10px 12px;margin-bottom:8px;background:var(--violet-tint);font-size:12.5px}
+  .auditbox{background:var(--red-tint);border:1.5px solid var(--red);border-radius:8px;padding:10px 12px;margin:10px 0}
+  .auditbox .warn{display:block;margin-bottom:3px}
+  .bsc td:first-child{font-size:11.5px}
+  .charterbox{background:var(--paper);border-radius:8px;padding:12px;margin-bottom:12px}
+  .charterbox textarea{width:100%;height:52px;font-size:12.5px}
+</style>
+</head>
+<body>
+<header><div class="hd">
+  <div><div class="eyebrow">EV Scooter Startup Simulation · Live Multiplayer</div><h1>EV Venture League <span style="font-weight:500;color:var(--muted);font-size:15px">online</span></h1></div>
+  <div class="qbadge" id="qbadge">EV Venture League</div>
+</div></header>
+<div class="wrap" id="root"></div>
+<div class="foot" id="foot"></div>
+<script>
+"use strict";
+/* ============================================================
+   CONFIGURATION · paste your Apps Script Web App URL here
+   (Deploy > New deployment > Web app > copy the /exec URL)
+   ============================================================ */
+const API_URL="https://script.google.com/macros/s/AKfycbx0KGGWKVBgHP8KDkPJz5su5lHTKOQVIdgRco-fsRhkX0QxAYYsF5wDk-HwItiCisqG/exec";
+
+const CATALOG = {
+  powertrain:{label:"Powertrain",opts:[
+    {id:"PT1",name:"PT1 · 7.0 kW (0-40 in 3.3s)",cost:19000},
+    {id:"PT2",name:"PT2 · 5.5 kW (0-30 in 3.3s)",cost:14500},
+    {id:"PT3",name:"PT3 · 4.2 kW (0-25)",cost:11000},
+    {id:"PT4",name:"PT4 · 3.0 kW hub (0-20)",cost:8000}]},
+  modes:{label:"Riding modes",opts:[
+    {id:"RM1",name:"Eco only (incl.)",cost:0},
+    {id:"RM2",name:"+ Ride (needs PT3+)",cost:1500,req:m=>["PT1","PT2","PT3"].includes(m.cfg.powertrain)},
+    {id:"RM3",name:"+ Sport (needs PT2+)",cost:3200,req:m=>["PT1","PT2"].includes(m.cfg.powertrain)},
+    {id:"RM4",name:"+ Warp (needs PT1)",cost:5500,req:m=>m.cfg.powertrain==="PT1"}]},
+  battery:{label:"Battery / charging",opts:[
+    {id:"BC1",name:"BC1 · 100 km · 0-80% 60min",cost:40000},
+    {id:"BC2",name:"BC2 · 80 km · 0-65% 60min",cost:34500},
+    {id:"BC3",name:"BC3 · 75 km · 0-50% 60min",cost:30500},
+    {id:"BC4",name:"BC4 · 65 km LFP · 0-40%",cost:25500},
+    {id:"BC5",name:"BC5 · 50 km LFP · 0-35%",cost:19000}]},
+  tech:{label:"Connected tech",opts:[
+    {id:"CT1",name:"CT1 · LCD",cost:1500},
+    {id:"CT2",name:"CT2 · TFT + Bluetooth",cost:5000},
+    {id:"CT3",name:"CT3 · App + navigation",cost:8500},
+    {id:"CT4",name:"CT4 · Touchscreen 4G OTA",cost:13000}]},
+  build:{label:"Build / body",opts:[
+    {id:"BD1",name:"BD1 · Aluminium + metal",cost:10000},
+    {id:"BD2",name:"BD2 · Steel + ABS",cost:6500},
+    {id:"BD3",name:"BD3 · Tubular + poly",cost:4000}]},
+  wheels:{label:"Wheels",opts:[
+    {id:"ALLOY",name:"Alloy",cost:4200},{id:"SPOKE",name:"Steel spoke",cost:2200}]},
+  brakes:{label:"Brakes",opts:[
+    {id:"BR1",name:"Dual disc + CBS",cost:5800},
+    {id:"BR2",name:"Front disc + drum",cost:3600},
+    {id:"BR3",name:"Drum + drum",cost:2000}]},
+  seat:{label:"Seat",opts:[
+    {id:"WIDE",name:"Wide dual-density",cost:2600},{id:"STD",name:"Standard",cost:1200}]},
+  susp:{label:"Suspension",opts:[
+    {id:"SUS1",name:"Telescopic + adj. mono",cost:6500},
+    {id:"SUS2",name:"Telescopic + twin rear",cost:4800},
+    {id:"SUS3",name:"Basic spring",cost:2800}]}
+};
+const ADDONS = [
+  {id:"removable",name:"Removable battery",cost:3000,req:m=>["BC3","BC4","BC5"].includes(m.cfg.battery)},
+  {id:"regen",name:"Regen braking",cost:2500,req:m=>["PT1","PT2"].includes(m.cfg.powertrain)},
+  {id:"boot",name:"34L boot",cost:1800},
+  {id:"backrest",name:"Pillion backrest",cost:900},
+  {id:"colors",name:"Color pack",cost:800},
+  {id:"tpms",name:"TPMS",cost:1500,req:m=>["CT2","CT3","CT4"].includes(m.cfg.tech)},
+  {id:"sidestand",name:"Stand cutoff",cost:400},
+  {id:"hillhold",name:"Hill-hold",cost:1200,req:m=>["PT1","PT2"].includes(m.cfg.powertrain)},
+  {id:"reverse",name:"Reverse assist",cost:1000,req:m=>["PT1","PT2"].includes(m.cfg.powertrain)},
+  {id:"theft",name:"Theft alerts",cost:800,req:m=>["CT3","CT4"].includes(m.cfg.tech)},
+  {id:"extwarranty",name:"5-yr warranty",cost:2000}
+];
+const BASE_PLATFORM=14000, ASSEMBLY=4000;
+
+/* R&D technology projects (firm-level; apply to the whole model line once ready).
+   fast = ready next quarter; std = ready in two quarters at ~70% of the cost (ASCM-style speed/efficiency tradeoff). */
+const TECHS=[
+  {id:"T1",name:"HyperCharge platform (0-80% in 18 min)",fx:{charge:2},fast:230,std:160,
+   note:"Transforms charging anxiety. Strongest with Urban Tech and Fleet."},
+  {id:"T2",name:"Solid-state range pack (+30% real range)",fx:{range:2},fast:270,std:190,
+   note:"Range leadership. Commuters and Fleet value it most."},
+  {id:"T3",name:"AI battery management suite",fx:{econ:1.5,range:.5},fast:170,std:120,
+   note:"Cuts cost/km and degradation. Eco and Fleet friendly."},
+  {id:"T4",name:"Swappable-pack standard",fx:{charge:1.5,econ:.5},fast:190,std:135,
+   note:"Charging time becomes a swap. Fleet duty cycles love it."},
+  {id:"T5",name:"ADAS-lite safety suite",fx:{safety:2},fast:210,std:145,
+   note:"Segment-first safety story. Commuter households respond."},
+  {id:"T6",name:"Lightweight composite chassis",fx:{perf:1,range:1},fast:200,std:140,
+   note:"Performance and efficiency together. Urban Tech and Young Adults."}
+];
+const techById=id=>TECHS.find(x=>x.id===id);
+
+const SEGMENTS=[
+  {id:"S1",name:"Urban Tech",pct:.15,wtp:[125000,190000],theta:.6,kappa:.6,
+   w:{perf:20,range:12,charge:13,tech:25,build:15,comfort:6,safety:6,econ:3}},
+  {id:"S2",name:"Commuters",pct:.38,wtp:[90000,130000],theta:1.2,kappa:.9,
+   w:{perf:6,range:22,charge:12,tech:5,build:8,comfort:18,safety:12,econ:17}},
+  {id:"S3",name:"Eco",pct:.14,wtp:[100000,160000],theta:.9,kappa:.8,
+   w:{perf:6,range:20,charge:8,tech:10,build:18,comfort:8,safety:10,econ:20}},
+  {id:"S4",name:"Young Adults",pct:.22,wtp:[60000,90000],theta:1.4,kappa:1.3,
+   w:{perf:22,range:10,charge:8,tech:18,build:20,comfort:6,safety:6,econ:10}},
+  {id:"S5",name:"Fleet",pct:.11,wtp:[70000,100000],theta:1.3,kappa:.7,
+   w:{perf:4,range:20,charge:16,tech:10,build:10,comfort:8,safety:12,econ:20}}
+];
+const LAMBDA=2.5, ALPHA=1.3, RHO=0.5, OUTSIDE_U=0.22, AW_DECAY=0.10, AD_K=120;
+const CLAIMS={perf:"Performance",range:"Range",charge:"Fast charging",tech:"Smart tech",build:"Build & design",comfort:"Comfort",safety:"Safety",econ:"Economy & reliability"};
+const SEG_NEEDS={
+ S1:{who:"Age 27-42, metro professionals, premium gadget buyers, 15-30 km/day, home charging available.",
+  needs:["Connected tech ecosystem: touchscreen, navigation, OTA updates, ride analytics","Thrilling acceleration and a headline ride mode; they test ride before buying","Premium metal build, alloy wheels, showroom-grade finish","Fast charging valued over absolute range","Brand experience: test rides, owner community, launch events"],
+  deal:["No fast charging","LCD-only dashboard","Drum brakes"],
+  price:"Low sensitivity inside the band. Repeated discounting cheapens the brand."},
+ S2:{who:"Age 25-50, salaried families, 30-60 km/day six days a week, often two-up with luggage.",
+  needs:["Real-world range = daily distance plus a 40% buffer; 75-100 km removes anxiety","Running economy: cost/km, reliability, service reach, warranty length","Two-up comfort: wide seat, good suspension, boot storage","Safety discussed at home: at least front disc with CBS","Overnight or removable charging beats ultra-fast charging"],
+  deal:["Range under ~65 km","Thin service network","No storage"],
+  price:"High sensitivity. EMI schemes, exchange bonuses and festive offers move them. Word of mouth is their most trusted source."},
+ S3:{who:"Age 24-45, educated urban buyers making a statement purchase, 20-40 km/day.",
+  needs:["Credible green story: LFP chemistry, durable materials, honest claims","Efficiency and truthful range; claimed-vs-delivered gaps hurt most here","Low cost per km validates the ecological choice","Longevity: metal build, long warranty, repairability; they keep vehicles 7+ years","Cause-led, transparent communication over celebrity ads"],
+  deal:["Perceived greenwashing (double reputation penalty)","Disposable plastic-heavy build","Short warranty"],
+  price:"Moderate sensitivity. Pays a 10-15% green premium when credentials are credible."},
+ S4:{who:"Age 18-26, students and first-jobbers, first vehicle, often parent-funded, 15-35 km/day.",
+  needs:["Price and EMI accessibility first; sub-Rs. 80k is the sweet spot","Style, colors and quick city pickup; launch feel over top speed","Some connectedness: Bluetooth dashboard, shareable ride stats","Removable battery for hostel and rented-flat charging","Campus presence, influencer buzz; strongest word-of-mouth multiplier"],
+  deal:["Priced above budget","Dated, utilitarian styling","Zero connectivity"],
+  price:"Very high sensitivity. Small price cuts visibly move share; discounts pull demand forward."},
+ S5:{who:"Delivery fleets, corporate campuses, rentals. 80-120 km/day, multi-shift, hard duty cycle. Buys in bulk.",
+  needs:["Lowest total cost of ownership per km, computed precisely","Duty-cycle durability and low defect rates","Fast charging or swappable packs: charging time is lost utilization","Telematics: GPS, geofencing, remote diagnostics (top tech tier)","Service SLAs and parts availability; dense networks win"],
+  deal:["No telematics option","Unproven reliability (new firms win small pilots first)","Slow charging with a fixed battery"],
+  price:"High but negotiated: expects 8-15% bulk discounts. Professional, TCO-driven procurement."}
+};
+const thetaLabel=t=>t<=0.7?"Low":t<=1.0?"Moderate":t<=1.25?"High":"Very high";
+const kappaLabel=k=>k>=1.1?"Very strong":k>=0.85?"Strong":k>=0.7?"Moderate":"Modest";
+const starStr=w=>{const n=w>=20?5:w>=14?4:w>=9?3:w>=5?2:1;return "★".repeat(n)+"<span style='opacity:.25'>"+"★".repeat(5-n)+"</span>";};
+const TEAM_COLORS=["#0B9E63","#3D7EA6","#8A5FBF","#C77D0A","#C03A2B","#2A3630"];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const clamp10=v=>clamp(v,0,10);
+const fmtRs=v=>"Rs. "+Math.round(v).toLocaleString("en-IN");
+const fmtL=v=>(v<0?"(":"")+Math.abs(v).toFixed(0)+(v<0?")":"");
+
+/* HR economics: package index is % of the industry benchmark package.
+   Sales staff cost 4.5 L/quarter per head at index 100; plant payroll scales with capacity. */
+const HR={salesCost:3.5, plantRate:0.012, min:80, max:130};
+const CENTRE={open:40, opex:8};        // experience centre: one-time opening cost + quarterly running cost (L)
+const CAP_BLOCK={units:500, cost:120}; // capacity expansion block: units and capex (L)
+const DEP_RATE=0.04;                   // plant depreciation per quarter
+const HOLD_COST=0.015;                 // inventory holding, L per unit per quarter
+
+function scoreModel(m,t){
+  const c=m.cfg, ad=m.add, isLFP=["BC4","BC5"].includes(c.battery);
+  const a={};
+  a.perf=clamp10({PT1:8,PT2:6.5,PT3:5,PT4:3}[c.powertrain]+{RM1:0,RM2:.5,RM3:1.2,RM4:2}[c.modes]);
+  a.range=clamp10({BC1:10,BC2:8,BC3:7.5,BC4:6.5,BC5:4.5}[c.battery]+(ad.regen?.5:0));
+  a.charge=clamp10({BC1:10,BC2:7.5,BC3:6,BC4:5,BC5:4}[c.battery]+(ad.removable?2:0));
+  a.tech=clamp10({CT1:1.5,CT2:5,CT3:7.5,CT4:10}[c.tech]+(ad.theft?.5:0));
+  a.build=clamp10({BD1:9,BD2:6,BD3:3.5}[c.build]+(c.wheels==="ALLOY"?1:0)+(ad.colors?.5:0));
+  a.comfort=clamp10({WIDE:3,STD:1.5}[c.seat]+{SUS1:5.5,SUS2:4,SUS3:2}[c.susp]+(ad.boot?1:0)+(ad.backrest?.5:0)+(ad.hillhold?.3:0)+(ad.reverse?.3:0));
+  a.safety=clamp10({BR1:6.5,BR2:4.5,BR3:2.5}[c.brakes]+(ad.tpms?1:0)+(ad.sidestand?.5:0)+(ad.hillhold?1:0)+(ad.theft?.5:0)+(ad.regen?.5:0));
+  a.econ=clamp10(4+(isLFP?1.5:0)+(c.powertrain==="PT4"?1:0)+(c.build==="BD1"?1:0)+(c.build==="BD3"?-1:0)+(ad.extwarranty?2:0)+(ad.removable?.5:0));
+  // Firm-level technologies from R&D or licensed in (applied to the whole line)
+  if(t&&t.techs&&t.techs.length){
+    for(const id of t.techs){const tc=techById(id);if(!tc)continue;
+      for(const k of Object.keys(tc.fx))a[k]=clamp10(a[k]+tc.fx[k]);}
+  }
+  // Manufacturing reliability feeds perceived economy and reliability
+  if(t)a.econ=clamp10(a.econ+3*(reliabilityOf(t)-0.5));
+  a.build_eco=clamp10({BD1:9,BD2:5,BD3:2.5}[c.build]+(isLFP?1:0)+(ad.regen?.5:0)+(ad.extwarranty?1:0));
+  a.build_style=clamp10(a.build+(ad.colors?1:0));
+  return a;
+}
+function qualityFit(a,seg){
+  let q=0;
+  for(const k of Object.keys(seg.w)){
+    let x=a[k];
+    if(k==="build"&&seg.id==="S3")x=a.build_eco;
+    if(k==="build"&&seg.id==="S4")x=a.build_style;
+    q+=seg.w[k]*(x/10);
+  }
+  return q/100;
+}
+function priceFit(p,seg){
+  const[L,H]=seg.wtp;
+  if(p<=L)return 1;
+  if(p<=H)return Math.pow((H-p)/(H-L),seg.theta);
+  return .08*Math.exp(-(p-H)/(.1*H));
+}
+function unitCost(m){
+  let c=BASE_PLATFORM;
+  for(const cat of Object.keys(CATALOG))c+=CATALOG[cat].opts.find(o=>o.id===m.cfg[cat]).cost;
+  for(const a of ADDONS)if(m.add[a.id])c+=a.cost;
+  return c+ASSEMBLY;
+}
+function bomHash(m){return Object.values(m.cfg).join("|")+"|"+ADDONS.map(a=>m.add[a.id]?1:0).join("");}
+function enforceModelRules(m){
+  const msgs=[];
+  const mo=CATALOG.modes.opts.find(o=>o.id===m.cfg.modes);
+  if(mo.req&&!mo.req(m)){
+    const fb=[...CATALOG.modes.opts].reverse().find(o=>!o.req||o.req(m));
+    msgs.push(`Riding modes reset to ${fb.id} (motor too small).`);m.cfg.modes=fb.id;
+  }
+  for(const a of ADDONS)if(m.add[a.id]&&a.req&&!a.req(m)){m.add[a.id]=false;msgs.push(`${a.name} removed (requirement lost).`);}
+  return msgs;
+}
+function mkModel(name,cfg,addIds,price){
+  const add={};ADDONS.forEach(a=>add[a.id]=addIds.includes(a.id));
+  return {id:"M"+Math.random().toString(36).slice(2,7),name,cfg:{...cfg},add,price,launchedQ:null,lastHash:null,inv:0};
+}
+const ARCHETYPES={
+  premium:{name:"Aurora X",price:152000,alloc:{S1:55,S2:5,S3:30,S4:5,S5:5},
+    cfg:{powertrain:"PT1",modes:"RM4",battery:"BC1",tech:"CT4",build:"BD1",wheels:"ALLOY",brakes:"BR1",seat:"WIDE",susp:"SUS1"},add:["tpms","theft","hillhold"],prim:"S1",sec:"S3"},
+  commuter:{name:"CityRun 75",price:112000,alloc:{S1:5,S2:65,S3:15,S4:5,S5:10},
+    cfg:{powertrain:"PT3",modes:"RM2",battery:"BC3",tech:"CT2",build:"BD2",wheels:"SPOKE",brakes:"BR2",seat:"WIDE",susp:"SUS2"},add:["boot"],prim:"S2",sec:"S3"},
+  budget:{name:"Zip GenZ",price:82000,alloc:{S1:0,S2:15,S3:5,S4:65,S5:15},
+    cfg:{powertrain:"PT4",modes:"RM1",battery:"BC5",tech:"CT2",build:"BD3",wheels:"SPOKE",brakes:"BR3",seat:"STD",susp:"SUS3"},add:["removable","colors"],prim:"S4",sec:"S2"},
+  fleeteco:{name:"HaulEV F1",price:98000,alloc:{S1:0,S2:15,S3:25,S4:5,S5:55},
+    cfg:{powertrain:"PT3",modes:"RM2",battery:"BC4",tech:"CT4",build:"BD1",wheels:"SPOKE",brakes:"BR2",seat:"STD",susp:"SUS2"},add:["removable","theft","extwarranty"],prim:"S5",sec:"S3"}
+};
+const ARCH_KEYS=["commuter","premium","budget","fleeteco"];
+
+
+/* ============================================================
+   EV VENTURE LEAGUE · MULTIPLAYER CLIENT
+   Talks to the Apps Script API. All authoritative logic runs
+   server-side; this file renders views and previews decisions.
+   ============================================================ */
+
+/* ------- client-side derived quantities (previews only) ------- */
+function reliabilityOf(t){return 1-0.5*Math.exp(-t.qualityCum/150);}
+function equityOf(t){return t.paidIn+t.cumProfit;}
+function debtOf(t){return t.debt.bank+t.debt.lt+t.debt.shark;}
+function bankLimit(t){return Math.max(0,1.5*equityOf(t)-t.debt.lt-t.debt.shark);}
+function ltLimit(t){return Math.max(0,2*equityOf(t)-debtOf(t));}
+function reachOf(t,salesMult){return clamp(1-Math.exp(-(t.centres*0.28+t.staff*(salesMult||1)*0.035)),0.15,0.97);}
+function hrMultsClient(t){
+  const metas=G.teamsMeta||[];
+  const mean=k=>metas.length?metas.reduce((x,m)=>x+m.hr[k],0)/metas.length:100;
+  const f=(idx,mn)=>clamp(1+0.008*(idx-mn),0.75,1.15);
+  return {sales:f(t.hr.sales,mean("sales")),plant:f(t.hr.plant,mean("plant"))};
+}
+function cumBSC(t){
+  const L=Math.min(4,t.hist.length);
+  if(L===0)return 0;
+  return t.hist.slice(-L).reduce((x,r)=>x+(r.bsc?r.bsc.total:0),0)/L;
+}
+function valuationOf(t){
+  const L=Math.min(4,t.hist.length);
+  if(L===0)return 800;
+  const annRev=t.hist.slice(-L).reduce((x,r)=>x+r.revenue,0)*(4/L);
+  return Math.max(800,Math.round(1.2*annRev*(0.7+0.6*t.rep)*(1+0.15*Math.min(2,cumBSC(t)))));
+}
+function seasonOf(q){const p=(q-1)%4;return p===1?{f:.9,label:"Monsoon quarter · demand x0.9"}:p===2?{f:1.25,label:"Festive quarter · demand x1.25"}:{f:1,label:"Regular quarter"};}
+function bomHash(m){return Object.values(m.cfg).join("|")+"|"+ADDONS.map(a=>m.add[a.id]?1:0).join("");}
+function enforceModelRules(m){
+  const msgs=[];
+  const mo=CATALOG.modes.opts.find(o=>o.id===m.cfg.modes);
+  if(mo.req&&!mo.req(m)){
+    const fb=[...CATALOG.modes.opts].reverse().find(o=>!o.req||o.req(m));
+    msgs.push(`Riding modes reset to ${fb.id} (motor too small).`);m.cfg.modes=fb.id;
+  }
+  for(const a of ADDONS)if(m.add[a.id]&&a.req&&!a.req(m)){m.add[a.id]=false;msgs.push(`${a.name} removed (requirement lost).`);}
+  return msgs;
+}
+
+/* ------- session, transport ------- */
+const root=document.getElementById("root");
+const qbadge=document.getElementById("qbadge");
+let SESSION={};try{SESSION=JSON.parse(localStorage.evleague||"{}");}catch(e){}
+function saveSession(){localStorage.evleague=JSON.stringify(SESSION);}
+let G=null;          // latest scoped fetch
+let MY=null;         // editable working copy of my team (decision phase)
+let PENDING={rndStarts:[]};
+let ui={editModel:null,resultTab:0,busy:false};
+let pollTimer=null;
+
+async function api(action,data){
+  const res=await fetch(API_URL,{method:"POST",body:JSON.stringify(Object.assign({action},data||{}))});
+  return res.json();
+}
+function busy(on,label){
+  ui.busy=on;
+  const b=document.getElementById("busyBar");
+  if(b){b.style.display=on?"block":"none";b.textContent=label||"Talking to the league server...";}
+}
+function setBadge(txt){qbadge.textContent=txt||( G?(G.phase==="gameover"?"Game over":`Quarter ${Math.min(G.quarter,G.cfg.quarters)} of ${G.cfg.quarters}`):"" ) || "EV Venture League";}
+function stopPoll(){if(pollTimer){clearInterval(pollTimer);pollTimer=null;}}
+function startPoll(fn,ms){stopPoll();pollTimer=setInterval(fn,ms||8000);}
+
+/* ============================================================
+   LANDING / CREATE / JOIN
+   ============================================================ */
+function renderLanding(){
+  stopPoll();setBadge("Welcome");
+  const canResume=SESSION.gameId&&SESSION.role;
+  root.innerHTML=`
+  <div class="grid2">
+    <div class="panel"><div class="panel-hd"><h2>I am a student team</h2><span class="tag">join with the code from your instructor</span></div>
+      <div class="panel-bd">
+        <div class="setuprow">
+          <div><label class="f">Game ID</label><input id="jGid" style="width:110px;text-transform:uppercase" maxlength="6" value="${SESSION.role==='team'?(SESSION.gameId||''):''}"></div>
+          <div><label class="f">Join code</label><input id="jCode" style="width:120px;text-transform:uppercase" maxlength="6"></div>
+          <button class="btn" onclick="lookupGame()">Find game</button>
+        </div>
+        <div id="joinArea"></div>
+        <p class="small muted" style="margin-top:10px">Already registered? Enter Game ID above, then use "Rejoin with team PIN" after finding the game.</p>
+      </div>
+    </div>
+    <div class="panel"><div class="panel-hd"><h2>I am the instructor</h2><span class="tag">create a new league or open an existing one</span></div>
+      <div class="panel-bd">
+        <button class="btn" onclick="renderCreate()">Create a new game</button>
+        <div class="setuprow" style="margin-top:14px">
+          <div><label class="f">Game ID</label><input id="iGid" style="width:110px;text-transform:uppercase" maxlength="6" value="${SESSION.role==='instructor'?(SESSION.gameId||''):''}"></div>
+          <div><label class="f">Instructor PIN</label><input id="iPin" type="password" style="width:120px"></div>
+          <button class="btn ghost" onclick="openInstructor()">Open console</button>
+        </div>
+        <div class="warn" id="iErr"></div>
+      </div>
+    </div>
+  </div>
+  ${canResume?`<button class="btn ghost" onclick="resume()">Resume last session (${SESSION.role} · game ${SESSION.gameId})</button>`:""}
+  <div id="busyBar" class="agenda" style="display:none;margin-top:12px"></div>`;
+  document.getElementById("foot").innerHTML="<b>EV Venture League</b> · multiplayer edition. Decisions are private, simulation runs on the league server, results publish to everyone when the instructor closes the quarter.";
+}
+function resume(){
+  if(SESSION.role==="team")refreshTeam();
+  else if(SESSION.role==="instructor")refreshInstructor();
+}
+async function lookupGame(){
+  const gameId=document.getElementById("jGid").value.trim().toUpperCase();
+  const joinCode=document.getElementById("jCode").value.trim().toUpperCase();
+  busy(true);
+  const r=await api("gameMeta",{gameId,joinCode});
+  busy(false);
+  const area=document.getElementById("joinArea");
+  if(!r.ok){area.innerHTML=`<div class="warn">${r.error}</div>`;return;}
+  area.innerHTML=`
+    <p class="small" style="margin:10px 0 6px"><b>${r.name}</b> · Quarter ${r.quarter} of ${r.cfg.quarters}</p>
+    ${r.teams.map(t=>`
+      <div class="teamrow"><span class="tname"><span class="teamdot" style="background:${t.color}"></span>${t.name}
+        ${t.isBot?'<span class="pill bot">BOT</span>':t.registered?'<span class="pill ok">Registered</span>':'<span class="pill wait">Open slot</span>'}</span>
+        <span>
+          ${!t.isBot&&!t.registered?`<button class="btn ghost" onclick="showRegister('${gameId}','${joinCode}',${t.i},'${t.name.replace(/'/g,"")}')">Register this team</button>`:""}
+          ${!t.isBot&&t.registered?`<button class="btn ghost" onclick="showRejoin('${gameId}',${t.i},'${t.name.replace(/'/g,"")}')">Rejoin with team PIN</button>`:""}
+        </span></div>`).join("")}
+    <div id="regArea"></div>`;
+}
+function showRegister(gameId,joinCode,i,name){
+  document.getElementById("regArea").innerHTML=`
+    <div class="charterbox"><b style="font-family:var(--font-d)">Register ${name}</b>
+      <div class="setuprow" style="margin-top:8px">
+        <div><label class="f">Choose a team PIN (min 4 chars, share only within your team)</label><input id="rPin" type="password" style="width:160px"></div>
+        <div style="flex:1;min-width:200px"><label class="f">Member names (max 6)</label><input id="rPlayers" style="width:100%"></div>
+        <button class="btn" onclick="doRegister('${gameId}','${joinCode}',${i})">Register & enter</button>
+      </div><div class="warn" id="rErr"></div></div>`;
+}
+async function doRegister(gameId,joinCode,i){
+  busy(true);
+  const r=await api("joinTeam",{gameId,joinCode,teamIndex:i,teamPin:document.getElementById("rPin").value,players:document.getElementById("rPlayers").value});
+  busy(false);
+  if(!r.ok){document.getElementById("rErr").textContent=r.error;return;}
+  SESSION={gameId,role:"team",teamIndex:i,pin:document.getElementById("rPin").value};saveSession();
+  refreshTeam();
+}
+function showRejoin(gameId,i,name){
+  document.getElementById("regArea").innerHTML=`
+    <div class="charterbox"><b style="font-family:var(--font-d)">Rejoin ${name}</b>
+      <div class="setuprow" style="margin-top:8px">
+        <div><label class="f">Team PIN</label><input id="rjPin" type="password" style="width:160px"></div>
+        <button class="btn" onclick="doRejoin('${gameId}',${i})">Enter</button>
+      </div><div class="warn" id="rjErr"></div></div>`;
+}
+async function doRejoin(gameId,i){
+  const pin=document.getElementById("rjPin").value;
+  busy(true);
+  const r=await api("getGame",{gameId,role:"team",teamIndex:i,pin});
+  busy(false);
+  if(!r.ok){document.getElementById("rjErr").textContent=r.error;return;}
+  SESSION={gameId,role:"team",teamIndex:i,pin};saveSession();
+  onTeamData(r);
+}
+
+function renderCreate(){
+  stopPoll();setBadge("New game");
+  let rows="";
+  for(let i=0;i<6;i++){
+    rows+=`<div class="setuprow">
+      <span class="teamdot" style="background:${TEAM_COLORS[i]}"></span>
+      <input id="tn${i}" placeholder="Team ${i+1} name (blank = skip)" style="width:190px">
+      <select id="ta${i}"><option value="commuter">Start: Commuter build</option><option value="premium">Start: Premium build</option><option value="budget">Start: Budget build</option><option value="fleeteco">Start: Fleet/Eco build</option></select>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12.5px"><input type="checkbox" id="tb${i}"> Bot</label>
+    </div>`;
+  }
+  root.innerHTML=`
+  <div class="panel"><div class="panel-hd"><h2>Create a new league</h2><span class="tag">2 to 6 firms · student teams register themselves with the join code</span></div>
+    <div class="panel-bd">
+      <div class="setuprow">
+        <div><label class="f">Game name</label><input id="gName" value="EV Venture League" style="width:220px"></div>
+        <div><label class="f">Instructor PIN</label><input id="gPin" type="password" style="width:130px" placeholder="min 4 chars"></div>
+      </div>
+      ${rows}
+      <div class="setuprow" style="margin-top:12px">
+        <div><label class="f">Quarters</label><select id="nq"><option>8</option><option selected>12</option><option>16</option><option>20</option><option>40</option></select></div>
+        <div><label class="f">Market size / quarter (units)</label><input id="tam" type="number" value="12000" style="width:110px"></div>
+        <div><label class="f">VC round in quarter</label><select id="vcq"><option>4</option><option selected>5</option><option>6</option><option>7</option><option>8</option></select></div>
+      </div>
+      <p class="small muted" style="margin:8px 0 14px">Each firm starts with Rs. 25 Cr of founders' capital (Rs. 19 Cr cash plus a plant worth Rs. 6 Cr, 2,500 units/quarter), one launched model, 4 experience centres, 20 sales staff, and 5% awareness in every segment. Performance is judged on an ASCM-style balanced scorecard. In Quarter 1 each firm writes its vision and mission and declares target segments.</p>
+      <button class="btn big" onclick="doCreate()">Create game</button>
+      <button class="btn ghost" onclick="renderLanding()">Back</button>
+      <div class="warn" id="cErr"></div>
+      <div id="busyBar" class="agenda" style="display:none;margin-top:12px"></div>
+    </div>
+  </div>`;
+}
+async function doCreate(){
+  const teams=[];
+  for(let i=0;i<6;i++){
+    const nm=document.getElementById("tn"+i).value.trim();
+    if(!nm)continue;
+    teams.push({name:nm,arch:document.getElementById("ta"+i).value,isBot:document.getElementById("tb"+i).checked});
+  }
+  busy(true,"Creating the league on the server...");
+  const r=await api("createGame",{name:document.getElementById("gName").value,instructorPin:document.getElementById("gPin").value,
+    quarters:+document.getElementById("nq").value,tam:+document.getElementById("tam").value,vcQuarter:+document.getElementById("vcq").value,teams});
+  busy(false);
+  if(!r.ok){document.getElementById("cErr").textContent=r.error;return;}
+  SESSION={gameId:r.gameId,role:"instructor",pin:document.getElementById("gPin").value};saveSession();
+  root.innerHTML=`
+  <div class="panel"><div class="panel-hd"><h2>League created</h2></div><div class="panel-bd" style="text-align:center">
+    <p>Share these with the class. Teams go to this same website and register themselves.</p>
+    <div style="display:flex;gap:24px;justify-content:center;margin:18px 0;flex-wrap:wrap">
+      <div class="kpi" style="padding:16px 26px"><div class="k-l">Game ID</div><div class="k-v" style="font-size:32px;letter-spacing:.1em">${r.gameId}</div></div>
+      <div class="kpi" style="padding:16px 26px"><div class="k-l">Join code</div><div class="k-v" style="font-size:32px;letter-spacing:.1em">${r.joinCode}</div></div>
+    </div>
+    <button class="btn big" onclick="refreshInstructor()">Open instructor console</button>
+  </div></div>`;
+}
+async function openInstructor(){
+  const gameId=document.getElementById("iGid").value.trim().toUpperCase();
+  const pin=document.getElementById("iPin").value;
+  busy(true);
+  const r=await api("getGame",{gameId,role:"instructor",pin});
+  busy(false);
+  if(!r.ok){document.getElementById("iErr").textContent=r.error;return;}
+  SESSION={gameId,role:"instructor",pin};saveSession();
+  onInstructorData(r);
+}
+
+/* ============================================================
+   TEAM CONSOLE
+   ============================================================ */
+async function refreshTeam(){
+  const r=await api("getGame",{gameId:SESSION.gameId,role:"team",teamIndex:SESSION.teamIndex,pin:SESSION.pin});
+  if(!r.ok){alert(r.error);renderLanding();return;}
+  onTeamData(r);
+}
+function onTeamData(r){
+  G=r;setBadge();
+  if(G.phase==="gameover"){renderFinal(G.leaderboard);return;}
+  if(G.phase==="results"){renderTeamResults();return;}
+  if(G.myTeam.dec.locked){renderTeamWaiting();return;}
+  MY=JSON.parse(JSON.stringify(G.myTeam));
+  PENDING.rndStarts=MY.rnd.filter(p=>p.qStart===G.quarter).map(p=>({id:p.id,mode:p.mode}));
+  MY.rnd=MY.rnd.filter(p=>p.qStart!==G.quarter);
+  ui.editModel=null;
+  renderTeamDecision();
+}
+function agendaFor(q,vcq){
+  if(q===1)return "<b>Q1 agenda · Organize the firm.</b> Write the vision and mission, declare primary and secondary target segments, study the market survey, and place a cautious first plan. Treat this as a test-market quarter.";
+  if(q<vcq-1)return `<b>Q${q} agenda · Test the market.</b> Read customer judgments, refine designs, pricing and campaigns, tune HR packages, keep production modest. Learn cheaply now; scale later.`;
+  if(q===vcq-1)return `<b>Q${q} agenda · Prepare the business plan.</b> The venture capitalists arrive next quarter. Review your balanced scorecard and plan how much to ask and what equity to offer.`;
+  if(q===vcq)return `<b>Q${q} agenda · Face the venture capitalists.</b> Negotiate equity funding in the VC Room below. Funded firms typically scale capacity, network and R&D from here.`;
+  return `<b>Q${q} agenda · Execute and improve.</b> Scale what works: capacity, network, R&D and licensing deals. Strong firms are strong on every scorecard dial, not just profit.`;
+}
+function lockStrip(){
+  return (G.teamsMeta||[]).map(m=>`<span class="pill ${m.locked?"ok":m.isBot?"bot":"wait"}" style="margin-right:5px"><span class="teamdot" style="background:${m.color};width:8px;height:8px"></span>${m.name}${m.isBot?" · bot":m.locked?" · locked":" · deciding"}</span>`).join("");
+}
+
+function renderTeamDecision(){
+  stopPoll();setBadge();
+  const t=MY;
+  const allocSum=SEGMENTS.reduce((x,s)=>x+(+t.dec.alloc[s.id]||0),0);
+  const prodSum=t.models.reduce((x,m)=>x+(+t.dec.prod[m.id]||0),0);
+  const hrM=hrMultsClient(t);
+  const reach=reachOf({centres:t.centres+(t.dec.newCentres||0),staff:t.staff+(t.dec.hire||0)},hrM.sales);
+  const reliab=reliabilityOf(t);
+
+  const charter=`
+    <div class="charterbox">
+      <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;align-items:baseline">
+        <b style="font-family:var(--font-d)">Company charter</b>
+        <span class="small muted">${G.quarter===1?"Required before locking Quarter 1. Your target segments feed the balanced scorecard.":"Set in Quarter 1 · target segments feed the balanced scorecard"}</span>
+      </div>
+      <div class="grid2" style="margin-top:8px">
+        <div><label class="f">Vision (where we are going)</label><textarea id="chVision" ${G.quarter>1?"readonly":""}>${t.vision||""}</textarea></div>
+        <div><label class="f">Mission (what we do, for whom, how)</label><textarea id="chMission" ${G.quarter>1?"readonly":""}>${t.mission||""}</textarea></div>
+      </div>
+      <div class="setuprow" style="margin-top:8px">
+        <div><label class="f">Primary target segment</label><select id="chPrim" ${G.quarter>1?"disabled":""}>${SEGMENTS.map(s=>`<option value="${s.id}" ${t.prim===s.id?"selected":""}>${s.name}</option>`).join("")}</select></div>
+        <div><label class="f">Secondary target segment</label><select id="chSec" ${G.quarter>1?"disabled":""}>${SEGMENTS.map(s=>`<option value="${s.id}" ${t.sec===s.id?"selected":""}>${s.name}</option>`).join("")}</select></div>
+        <div style="flex:1;min-width:220px"><label class="f">Top three goals, ranked</label><input id="chGoals" style="width:100%" ${G.quarter>1?"readonly":""} value="${(t.goals||"").replace(/"/g,"&quot;")}" placeholder="e.g. 1) No.1 with Commuters 2) EBITDA+ by Q6 3) Highest BSC"></div>
+      </div>
+    </div>`;
+
+  const cards=t.models.map((m,mi)=>{
+    const cost=unitCost(m);
+    const scores=scoreModel(m,t);
+    const editing=ui.editModel===mi;
+    const qchips=SEGMENTS.map(s=>{
+      const q=qualityFit(scores,s),ps=priceFit(m.price,s);
+      return `<span class="qchip">${s.name}<br><b>Q ${q.toFixed(2)}</b> · P ${ps.toFixed(2)}</span>`;
+    }).join("");
+    let editor="";
+    if(editing){
+      editor=`<div class="cfgrow">`+Object.keys(CATALOG).map(cat=>{
+        const c=CATALOG[cat];
+        return `<div><label class="f">${c.label}</label><select onchange="setCfg(${mi},'${cat}',this.value)">${
+          c.opts.map(o=>{const ok=!o.req||o.req(m);return `<option value="${o.id}" ${m.cfg[cat]===o.id?"selected":""} ${ok?"":"disabled"}>${o.name} · ${o.cost===0?"incl":fmtRs(o.cost)}</option>`}).join("")}</select></div>`;
+      }).join("")+`</div>
+      <div class="addgrid">`+ADDONS.map(a=>{
+        const ok=!a.req||a.req(m);
+        return `<label class="addchk ${ok?"":"dis"}"><input type="checkbox" ${m.add[a.id]?"checked":""} ${ok?"":"disabled"} onchange="toggleAdd(${mi},'${a.id}')">${a.name} <span class="muted">${fmtRs(a.cost)}</span></label>`;
+      }).join("")+`</div>
+      <p class="small muted" style="margin-top:8px">Changing a launched model's BOM costs Rs. 15 L re-engineering this quarter.</p>`;
+    }
+    const warrPerUnit=Math.round(2600-1800*reliab);
+    return `<div class="modelcard ${editing?"editing":""}">
+      <div class="mc-hd">
+        <span class="nm">${m.name}${m.inv>0?` <span class="pill wait">${m.inv.toLocaleString("en-IN")} in stock</span>`:""}${m.isNew?' <span class="pill warnp">NEW · Rs. 50 L dev</span>':""}</span>
+        <span class="mono small">Unit cost <b>${fmtRs(cost)}</b></span>
+        <span>Price Rs. <input type="number" value="${m.price}" min="55000" max="200000" step="500" style="width:110px" onchange="setPrice(${mi},this.value)"></span>
+        <button class="btn ghost" onclick="ui.editModel=${editing?"null":mi};renderTeamDecision()">${editing?"Close editor":"Edit BOM"}</button>
+      </div>
+      <div class="qstrip">${qchips}</div>
+      <div class="small ${m.price-cost-warrPerUnit<0?'warn':'muted'}" style="margin-top:6px">Contribution/unit: ${fmtRs(m.price-cost-warrPerUnit)} (after Rs. ${warrPerUnit.toLocaleString("en-IN")} warranty provision at reliability ${reliab.toFixed(2)})</div>
+      ${editor}
+    </div>`;
+  }).join("");
+
+  const pendingIds=PENDING.rndStarts.map(p=>p.id);
+  const techRows=TECHS.map(tc=>{
+    const owned=t.techs.includes(tc.id);
+    const prog=t.rnd.find(p=>p.id===tc.id);
+    const pend=PENDING.rndStarts.find(p=>p.id===tc.id);
+    let right="";
+    if(owned)right=`<span class="pill ok">In your line</span>`;
+    else if(prog)right=`<span class="pill wait">In the lab · ready Q${prog.qDone}</span>`;
+    else if(pend)right=`<span class="pill wait">Starts this quarter (${pend.mode==="fast"?"crash":"standard"})</span> <button class="btn tiny ghost" onclick="cancelRnd('${tc.id}')">Cancel</button>`;
+    else right=`<button class="btn tiny ghost" onclick="startRnd('${tc.id}','fast')">Crash 1 qtr · Rs. ${tc.fast} L</button>
+                <button class="btn tiny ghost" onclick="startRnd('${tc.id}','std')">Standard 2 qtr · Rs. ${tc.std} L</button>`;
+    const fx=Object.keys(tc.fx).map(k=>`${CLAIMS[k]} +${tc.fx[k]}`).join(", ");
+    return `<div class="techcard ${owned?"owned":(prog||pend)?"progress":""}">
+      <div><div class="tn">${tc.name}</div><div class="small muted">${fx} across your whole line · ${tc.note}</div></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">${right}</div>
+    </div>`;
+  }).join("");
+
+  const offersInBlk=(G.offersIn||[]).map(c=>{
+    const tc=techById(c.techId);const seller=G.teamsMeta.find(m=>m.i===c.sellerI);
+    return `<div class="contract"><b>${seller?seller.name:"?"}</b> offers a licence for <b>${tc.name}</b> at <b>Rs. ${c.fee.toLocaleString("en-IN")} L</b> (one-time; executes at quarter end; usable from next quarter; non-revocable once accepted).
+      <div style="margin-top:6px"><button class="btn tiny" onclick="respondLicence(${c.id},true)">Accept licence</button>
+      <button class="btn tiny ghost" onclick="respondLicence(${c.id},false)">Reject</button></div></div>`;
+  }).join("");
+  const offersOutBlk=(G.offersOut||[]).map(c=>{
+    const buyer=G.teamsMeta.find(m=>m.i===c.buyerI);
+    return `<div class="contract">Offer sent to <b>${buyer?buyer.name:"?"}</b>: ${techById(c.techId).name} at Rs. ${c.fee.toLocaleString("en-IN")} L · <span class="muted">awaiting response (expires at quarter end)</span></div>`;
+  }).join("");
+  const rivals=G.teamsMeta.filter(m=>m.i!==t.i);
+  const offerForm=t.techs.length?`
+    <div class="setuprow" style="background:var(--violet-tint);border-radius:8px;padding:10px">
+      <div><label class="f">License a technology to a rival</label>
+        <select id="licTech">${t.techs.map(id=>`<option value="${id}">${techById(id).name}</option>`).join("")}</select></div>
+      <div><label class="f">To firm</label>
+        <select id="licBuyer">${rivals.map(x=>`<option value="${x.i}">${x.name}${x.isBot?" (bot)":""}</option>`).join("")}</select></div>
+      <div><label class="f">Fee (Rs. L, min 1)</label><input id="licFee" type="number" min="1" step="5" value="80" style="width:90px"></div>
+      <button class="btn ghost" onclick="makeOffer()">Send offer</button>
+      <span class="small muted">Benchmark: about half the standard development cost. You write the contract; the buyer must accept during this quarter.</span>
+    </div>`:`<p class="small muted">Develop a technology first; then you can license it to rivals and recoup your investment.</p>`;
+
+  root.innerHTML=`
+  <div class="panel"><div class="panel-hd">
+    <h2><span class="teamdot" style="background:${t.color}"></span>${t.name} · Quarter ${G.quarter} decisions</h2>
+    <span><button class="btn ghost" onclick="renderSurvey()">Market needs survey</button> <span class="tag">Cash ${fmtL(t.cash)} L · Rep ${t.rep.toFixed(2)} · Equity Rs. ${fmtL(equityOf(t))} L</span></span></div>
+    <div class="panel-bd">
+      <div class="notice" id="tNotice"></div>
+      <div class="agenda">${agendaFor(G.quarter,G.cfg.vcQuarter)}</div>
+      <div class="small" id="liveStrip" style="margin-bottom:10px">${lockStrip()}</div>
+      ${charter}
+
+      <h2 class="sect">Models (${t.models.length}/3)</h2>
+      ${cards}
+      ${t.models.length<3?`<button class="btn ghost" onclick="addModel()">+ Launch new model (Rs. 50 L development)</button>`:""}
+
+      <h2 class="sect">R&D pipeline & technology licensing <span class="small muted" style="font-weight:400">· max 2 projects in the lab · crash costs more, standard saves ~30%</span></h2>
+      ${techRows}
+      ${offersInBlk?`<label class="f" style="margin-top:10px">Licence offers awaiting your decision</label>${offersInBlk}`:""}
+      ${offersOutBlk}
+      ${offerForm}
+
+      <h2 class="sect">Marketing</h2>
+      <div class="setuprow">
+        <div><label class="f">Ad budget (Rs. L / quarter)</label><input type="number" min="0" max="800" step="10" value="${t.dec.ad}" style="width:110px" onchange="t_set('ad',this.value,0,800)"></div>
+        <div class="small muted">Diminishing returns per segment above ~Rs. 120 L of targeted spend. Awareness decays 10%/quarter if unfed.${G.quarter<=3?" Auditor cap: Rs. 300 L in the test-market phase.":""}</div>
+      </div>
+      <label class="f">Campaign claims · pick up to 2 things your ads promise</label>
+      <div class="qstrip" style="margin-top:4px;margin-bottom:10px">${Object.keys(CLAIMS).map(k=>{
+        const on=(t.dec.claims||[]).includes(k);
+        return `<button class="chip" style="${on?'background:var(--green-tint);border-color:var(--green);color:var(--green-deep)':''}" onclick="toggleClaim('${k}')">${CLAIMS[k]}</button>`;
+      }).join("")}</div>
+      <label class="f">Allocation across segments (%) · currently ${allocSum}%</label>
+      <div class="allocgrid">${SEGMENTS.map(s=>`
+        <div><label class="f" style="text-transform:none">${s.name} <span class="muted">(aw ${t.aw[s.id].toFixed(2)})</span></label>
+        <input type="number" min="0" max="100" value="${t.dec.alloc[s.id]||0}" style="width:100%" onchange="t_setAlloc('${s.id}',this.value)"></div>`).join("")}
+      </div>
+      ${allocSum!==100?`<div class="warn" style="margin-top:6px">Allocation must sum to 100 (now ${allocSum}).</div>`:""}
+
+      <h2 class="sect">Sales network & service reach</h2>
+      <div class="setuprow">
+        <div><label class="f">Experience centres (now ${t.centres})</label><input type="number" min="0" max="2" step="1" value="${t.dec.newCentres||0}" style="width:80px" onchange="t_set('newCentres',this.value,0,2)"> <span class="small muted">new this qtr · Rs. ${CENTRE.open} L each + Rs. ${CENTRE.opex} L/qtr running</span></div>
+        <div><label class="f">Sales staff (now ${t.staff})</label><input type="number" min="${-t.staff}" max="60" step="1" value="${t.dec.hire||0}" style="width:80px" onchange="t_set('hire',this.value,${-t.staff},60)"> <span class="small muted">hire (+) or release (-) · Rs. ${HR.salesCost} L/head/qtr at benchmark pay · max 8 per centre</span></div>
+      </div>
+      <div class="small muted">Projected distribution & service reach: <b class="mono">${(reach*100).toFixed(0)}%</b> of interested buyers can conveniently see, buy and service your scooters. Reach gates demand and lifts satisfaction.</div>
+
+      <h2 class="sect">Human resources · compensation packages</h2>
+      <div class="setuprow">
+        <div><label class="f">Sales staff package (% of industry benchmark)</label><input type="number" min="${HR.min}" max="${HR.max}" step="1" value="${t.hr.sales}" style="width:90px" onchange="t_setHR('sales',this.value)"></div>
+        <div><label class="f">Plant workers package (% of benchmark)</label><input type="number" min="${HR.min}" max="${HR.max}" step="1" value="${t.hr.plant}" style="width:90px" onchange="t_setHR('plant',this.value)"></div>
+        <div class="small muted">Pay relative to rivals drives productivity: projected sales effectiveness x${hrM.sales.toFixed(2)}, plant output x${hrM.plant.toFixed(2)}. The table shows last quarter's public industry packages.</div>
+      </div>
+      <table style="max-width:520px"><tr><th>Firm</th><th>Sales pkg</th><th>Plant pkg</th></tr>
+        ${G.teamsMeta.map(x=>`<tr><td><span class="teamdot" style="background:${x.color}"></span>${x.i===t.i?"<b>"+x.name+" (you)</b>":x.name}</td><td>${x.i===t.i?t.hr.sales:x.hr.sales}</td><td>${x.i===t.i?t.hr.plant:x.hr.plant}</td></tr>`).join("")}</table>
+
+      <h2 class="sect">Production, capacity & quality</h2>
+      <div class="setuprow">${t.models.map(m=>`
+        <div><label class="f" style="text-transform:none">${m.name}${m.inv>0?` <span class="muted">+${m.inv} stock</span>`:""}</label>
+        <input type="number" min="0" max="${t.capacity}" step="50" value="${t.dec.prod[m.id]||0}" style="width:110px" onchange="t_setProd('${m.id}',this.value)"></div>`).join("")}
+        <div class="small ${prodSum>t.capacity?"warn":"muted"}" style="align-self:flex-end">Scheduled ${prodSum.toLocaleString("en-IN")} / ${t.capacity.toLocaleString("en-IN")} capacity · ${(t.models.length>1?"changeover and ":"")}plant productivity applies to output</div>
+      </div>
+      <div class="setuprow">
+        <div><label class="f">Expand capacity (blocks of ${CAP_BLOCK.units})</label><input type="number" min="0" max="4" step="1" value="${t.dec.expBlocks||0}" style="width:80px" onchange="t_set('expBlocks',this.value,0,4)"> <span class="small muted">Rs. ${CAP_BLOCK.cost} L capex per block · online next quarter · depreciates ${(DEP_RATE*100).toFixed(0)}%/qtr</span></div>
+        <div><label class="f">Quality improvement spend (Rs. L)</label><input type="number" min="0" max="120" step="5" value="${t.dec.quality||0}" style="width:90px" onchange="t_set('quality',this.value,0,120)"> <span class="small muted">reliability now ${reliab.toFixed(2)} · cuts warranty cost/unit and lifts perceived reliability</span></div>
+      </div>
+      <div class="small muted">Unsold units carry to next quarter at Rs. ${(HOLD_COST*1e5).toLocaleString("en-IN")}/unit holding cost, and excess inventory hurts your asset-management score.</div>
+
+      <h2 class="sect">Finance</h2>
+      <div class="setuprow">
+        <div><label class="f">Bank credit line outstanding (Rs. L)</label><input type="number" min="0" max="${Math.floor(bankLimit(t))}" step="25" value="${t.dec.bankTarget||t.debt.bank}" style="width:110px" onchange="t_set('bankTarget',this.value,0,${Math.floor(bankLimit(t))})"> <span class="small muted">limit Rs. ${Math.floor(bankLimit(t)).toLocaleString("en-IN")} L (1.5x equity less other debt) · ~3-5%/qtr, rises with utilization</span></div>
+        <div><label class="f">Issue 5-year bond (Rs. L)</label><input type="number" min="0" max="${Math.floor(ltLimit(t))}" step="50" ${t.debt.lt>0?"disabled":""} value="${t.dec.ltIssue||0}" style="width:110px" onchange="t_set('ltIssue',this.value,0,${Math.floor(ltLimit(t))})"> <span class="small muted">${t.debt.lt>0?`bond outstanding Rs. ${t.debt.lt.toFixed(0)} L · ${t.debt.ltLeft} qtrs to maturity`:"4.5%/qtr fixed · principal due after 20 quarters · limit 2x equity"}</span></div>
+      </div>
+      <div class="small muted">Debt now: bank Rs. ${t.debt.bank.toFixed(0)} L · bond Rs. ${t.debt.lt.toFixed(0)} L · emergency Rs. ${t.debt.shark.toFixed(0)} L. Ending a quarter with negative cash triggers an emergency loan at up to 25%/qtr plus equity dilution.</div>
+
+      <h2 class="sect">Market research</h2>
+      <div class="setuprow">
+        <label class="addchk" style="padding:8px 11px"><input type="checkbox" ${t.dec.buyIntel?"checked":""} onchange="t_toggle('buyIntel')"> Competitor Intelligence Report <span class="muted">Rs. 15 L</span></label>
+        <label class="addchk" style="padding:8px 11px"><input type="checkbox" ${t.dec.buyClinic?"checked":""} onchange="t_toggle('buyClinic')"> Customer Clinic (all-market judgments) <span class="muted">Rs. 10 L</span></label>
+      </div>
+
+      ${G.quarter===G.cfg.vcQuarter?`
+      <h2 class="sect">VC Room · this quarter only</h2>
+      <div class="setuprow" style="background:var(--green-tint);border-radius:8px;padding:12px">
+        <div class="small">Indicative valuation of ${t.name}: <b class="mono">Rs. ${valuationOf(t).toLocaleString("en-IN")} L</b><br>
+        <span class="muted">1.2 x annualized trailing revenue x reputation, lifted by your cumulative balanced scorecard. Offer at least ask/valuation in equity or expect partial funding.</span></div>
+        <div><label class="f">Ask (Rs. L)</label><input type="number" min="0" max="2000" step="50" value="${t.dec.vc?t.dec.vc.ask:0}" style="width:100px" onchange="t_setVC('ask',this.value)"></div>
+        <div><label class="f">Equity offered (%)</label><input type="number" min="0" max="60" step="0.5" value="${t.dec.vc?t.dec.vc.equity:0}" style="width:90px" onchange="t_setVC('equity',this.value)"></div>
+      </div>`:""}
+
+      <div style="margin-top:20px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <button class="btn big" id="lockBtn" onclick="submitLock()">Lock in decisions</button>
+        <button class="btn ghost" onclick="refreshTeam()">Discard edits & reload</button>
+        <button class="btn ghost" onclick="logout()">Sign out</button>
+      </div>
+      <div id="auditArea"></div>
+      <div id="busyBar" class="agenda" style="display:none;margin-top:12px"></div>
+    </div>
+  </div>`;
+  // light poll: refresh lock strip and incoming offers without touching the form
+  startPoll(async()=>{
+    try{
+      const r=await api("getGame",{gameId:SESSION.gameId,role:"team",teamIndex:SESSION.teamIndex,pin:SESSION.pin});
+      if(!r.ok)return;
+      const hadOffers=(G.offersIn||[]).length;
+      G.teamsMeta=r.teamsMeta;G.offersIn=r.offersIn;G.offersOut=r.offersOut;G.phase=r.phase;G.quarter=r.quarter;
+      const strip=document.getElementById("liveStrip");
+      if(strip)strip.innerHTML=lockStrip();
+      if(r.phase!=="decisions"){onTeamData(r);return;}
+      if((r.offersIn||[]).length!==hadOffers)tNote("A licence offer just arrived. Scroll to the R&D section to respond, then lock in again if needed.");
+    }catch(e){}
+  },10000);
+}
+function tNote(msg){const n=document.getElementById("tNotice");if(!n)return;n.innerHTML=msg;n.classList.add("show");clearTimeout(n._t);n._t=setTimeout(()=>n.classList.remove("show"),5000);n.scrollIntoView({block:"nearest"});}
+function readCharter(){
+  const g=id=>{const el=document.getElementById(id);return el?el.value:null;};
+  if(G.quarter===1){MY.vision=g("chVision")||"";MY.mission=g("chMission")||"";MY.goals=g("chGoals")||"";
+    MY.prim=g("chPrim")||MY.prim;MY.sec=g("chSec")||MY.sec;}
+}
+function setCfg(mi,cat,val){readCharter();const m=MY.models[mi];m.cfg[cat]=val;const msgs=enforceModelRules(m);renderTeamDecision();if(msgs.length)tNote(msgs.join(" "));}
+function toggleAdd(mi,id){readCharter();const m=MY.models[mi];m.add[id]=!m.add[id];const msgs=enforceModelRules(m);renderTeamDecision();if(msgs.length)tNote(msgs.join(" "));}
+function setPrice(mi,v){readCharter();MY.models[mi].price=clamp(Math.round(+v/500)*500,55000,200000);renderTeamDecision();}
+function t_set(f,v,a,b){readCharter();MY.dec[f]=clamp(Math.round(+v||0),a,b);renderTeamDecision();}
+function t_setHR(k,v){readCharter();MY.hr[k]=clamp(Math.round(+v||100),HR.min,HR.max);renderTeamDecision();}
+function t_setAlloc(sid,v){readCharter();MY.dec.alloc[sid]=clamp(Math.round(+v||0),0,100);renderTeamDecision();}
+function t_setProd(mid,v){readCharter();MY.dec.prod[mid]=clamp(Math.round(+v||0),0,MY.capacity);renderTeamDecision();}
+function t_toggle(f){readCharter();MY.dec[f]=!MY.dec[f];renderTeamDecision();}
+function t_setVC(f,v){readCharter();MY.dec.vc=MY.dec.vc||{ask:0,equity:0};MY.dec.vc[f]=f==="ask"?clamp(Math.round(+v||0),0,2000):clamp(+v||0,0,60);renderTeamDecision();}
+function toggleClaim(k){readCharter();MY.dec.claims=MY.dec.claims||[];
+  const i=MY.dec.claims.indexOf(k);
+  if(i>=0)MY.dec.claims.splice(i,1);
+  else{if(MY.dec.claims.length>=2){tNote("Maximum two claims per campaign. Remove one first.");return;}MY.dec.claims.push(k);}
+  renderTeamDecision();}
+function addModel(){
+  readCharter();
+  if(MY.models.length>=3)return;
+  const m={id:"M"+Math.random().toString(36).slice(2,7),name:"New Model "+(MY.models.length+1),
+    cfg:{...ARCHETYPES.commuter.cfg},add:{},price:110000,inv:0,isNew:true};
+  ADDONS.forEach(a=>m.add[a.id]=a.id==="boot");
+  MY.models.push(m);MY.dec.prod[m.id]=0;
+  ui.editModel=MY.models.length-1;
+  renderTeamDecision();
+  tNote("New model added. Rs. 50 L development charge applies this quarter. Allocate production to it and consider raising ad spend.");
+}
+function startRnd(id,mode){
+  readCharter();
+  if(MY.techs.includes(id)||MY.rnd.some(p=>p.id===id)||PENDING.rndStarts.some(p=>p.id===id))return;
+  if(MY.rnd.length+PENDING.rndStarts.length>=2){tNote("The lab can run at most two projects at a time (auditor limit). Finish one first.");return;}
+  PENDING.rndStarts.push({id,mode});
+  renderTeamDecision();
+  const tc=techById(id);
+  tNote(`${tc.name} will start this quarter (${mode==="fast"?"crash, ready next quarter":"standard, ready in two quarters"}). Rs. ${mode==="fast"?tc.fast:tc.std} L expensed on lock-in.`);
+}
+function cancelRnd(id){readCharter();PENDING.rndStarts=PENDING.rndStarts.filter(p=>p.id!==id);renderTeamDecision();}
+async function makeOffer(){
+  readCharter();
+  const techId=document.getElementById("licTech").value;
+  const buyerI=+document.getElementById("licBuyer").value;
+  const fee=Math.max(1,Math.round(+document.getElementById("licFee").value||0));
+  busy(true,"Sending offer...");
+  const r=await api("offerLicence",{gameId:SESSION.gameId,teamIndex:SESSION.teamIndex,pin:SESSION.pin,techId,buyerI,fee});
+  busy(false);
+  if(!r.ok){tNote(r.error);return;}
+  const g=await api("getGame",{gameId:SESSION.gameId,role:"team",teamIndex:SESSION.teamIndex,pin:SESSION.pin});
+  if(g.ok){G.offersIn=g.offersIn;G.offersOut=g.offersOut;}
+  renderTeamDecision();tNote(r.note);
+}
+async function respondLicence(id,accept){
+  busy(true);
+  const r=await api("respondLicence",{gameId:SESSION.gameId,teamIndex:SESSION.teamIndex,pin:SESSION.pin,contractId:id,accept});
+  busy(false);
+  if(!r.ok){tNote(r.error);return;}
+  const g=await api("getGame",{gameId:SESSION.gameId,role:"team",teamIndex:SESSION.teamIndex,pin:SESSION.pin});
+  if(g.ok){G.offersIn=g.offersIn;G.offersOut=g.offersOut;}
+  if(document.getElementById("licTech")||document.getElementById("tNotice")){renderTeamDecision();tNote(accept?"Licence accepted. The fee is charged and the technology arrives at quarter end (usable from next quarter). Non-revocable.":"Offer rejected.");}
+  else renderTeamWaiting();
+}
+async function submitLock(){
+  readCharter();
+  const payload={vision:MY.vision,mission:MY.mission,goals:MY.goals,prim:MY.prim,sec:MY.sec,
+    hr:{sales:MY.hr.sales,plant:MY.hr.plant},
+    models:MY.models.map(m=>({id:m.id,name:m.name,cfg:m.cfg,add:m.add,price:m.price})),
+    dec:{ad:MY.dec.ad,claims:MY.dec.claims,alloc:MY.dec.alloc,prod:MY.dec.prod,
+      quality:MY.dec.quality,expBlocks:MY.dec.expBlocks,newCentres:MY.dec.newCentres,hire:MY.dec.hire,
+      bankTarget:MY.dec.bankTarget,ltIssue:MY.dec.ltIssue,buyIntel:MY.dec.buyIntel,buyClinic:MY.dec.buyClinic,
+      vc:MY.dec.vc,rndStarts:PENDING.rndStarts}};
+  busy(true,"Submitting to the auditor...");
+  const r=await api("submitDecisions",{gameId:SESSION.gameId,teamIndex:SESSION.teamIndex,pin:SESSION.pin,payload});
+  busy(false);
+  const box=document.getElementById("auditArea");
+  if(!r.ok){
+    if(r.audit)box.innerHTML=`<div class="auditbox"><b style="font-family:var(--font-d)">Final check · the auditor blocked your lock-in</b>${r.audit.map(e=>`<span class="warn">· ${e}</span>`).join("")}</div>`;
+    else box.innerHTML=`<div class="auditbox"><span class="warn">${r.error}</span></div>`;
+    box.scrollIntoView({block:"nearest"});
+    return;
+  }
+  refreshTeam();
+}
+function logout(){stopPoll();SESSION={};saveSession();renderLanding();}
+
+function renderTeamWaiting(){
+  setBadge();
+  const t=G.myTeam;
+  const offersInBlk=(G.offersIn||[]).map(c=>{
+    const tc=techById(c.techId);const seller=G.teamsMeta.find(m=>m.i===c.sellerI);
+    return `<div class="contract"><b>${seller?seller.name:"?"}</b> offers a licence for <b>${tc.name}</b> at <b>Rs. ${c.fee.toLocaleString("en-IN")} L</b>.
+      <div style="margin-top:6px"><button class="btn tiny" onclick="respondLicence(${c.id},true)">Accept</button>
+      <button class="btn tiny ghost" onclick="respondLicence(${c.id},false)">Reject</button></div></div>`;
+  }).join("");
+  root.innerHTML=`
+  <div class="panel"><div class="panel-hd"><h2><span class="teamdot" style="background:${t.color}"></span>${t.name} · Quarter ${G.quarter}</h2><span class="tag">decisions locked</span></div>
+    <div class="panel-bd" style="text-align:center">
+      <div class="notice" id="tNotice"></div>
+      <p style="font-family:var(--font-d);font-size:18px;margin:18px 0 6px">Decisions locked in. Waiting for the other firms and the instructor.</p>
+      <div class="small" style="margin:10px 0">${lockStrip()}</div>
+      ${offersInBlk?`<div style="text-align:left;max-width:560px;margin:14px auto"><label class="f">Licence offers you can still act on this quarter</label>${offersInBlk}</div>`:""}
+      <p class="small muted">This screen updates automatically. Ask the instructor to unlock you if you need to change something.</p>
+      <button class="btn ghost" onclick="renderSurvey()">Market needs survey</button>
+      <button class="btn ghost" onclick="logout()">Sign out</button>
+      <div id="busyBar" class="agenda" style="display:none;margin-top:12px"></div>
+    </div>
+  </div>`;
+  startPoll(refreshTeam,7000);
+}
+
+/* ---------- shared result renderers ---------- */
+const BSC_LABELS={FP:"Financial performance",MP:"Market performance (target segments)",ME:"Marketing effectiveness",IF:"Investment in future",W:"Wealth creation",HR:"Human resource management",AM:"Asset management",MFG:"Manufacturing productivity",FR:"Financial risk"};
+function publicReportHTML(rep){
+  const segBars=SEGMENTS.map(s=>{
+    const units=rep.segShare[s.id];const tot=units.reduce((a,b)=>a+b,0);
+    const metas=G.teamsMeta||(G.state?G.state.teams:[]);
+    const inner=tot>0?units.map((u,i)=>{
+      const pct=u/tot*100;const color=(metas[i]||{}).color||"#888";const name=(metas[i]||{}).name||"";
+      return pct>0.5?`<div class="sbseg" style="width:${pct}%;background:${color}" title="${name}: ${Math.round(u).toLocaleString('en-IN')} units">${pct>9?Math.round(pct)+"%":""}</div>`:"";
+    }).join(""):`<div class="sbseg" style="width:100%;background:#D8DED9;color:#5C6963">no EV sales</div>`;
+    return `<div class="small" style="display:flex;justify-content:space-between"><b>${s.name}</b><span class="muted mono">${Math.round(tot).toLocaleString("en-IN")} units converted</span></div><div class="sharebarrow">${inner}</div>`;
+  }).join("");
+  return `
+      <div class="newsline"><b>Industry snapshot:</b> ${rep.priceTable.reduce((x,p)=>x+p.units,0).toLocaleString("en-IN")} EVs sold across ${rep.priceTable.length} models · average list price ${fmtRs(rep.priceTable.reduce((x,p)=>x+p.price,0)/rep.priceTable.length)}.</div>
+      ${rep.news.map(n=>`<div class="newsline">${n}</div>`).join("")}
+      <div class="grid2" style="margin-top:14px">
+        <div>${segBars}</div>
+        <div><table><tr><th>Team</th><th>Model</th><th>List price</th><th>Units sold</th></tr>
+          ${rep.priceTable.map(p=>`<tr><td><span class="teamdot" style="background:${p.color}"></span>${p.team}</td><td style="text-align:left;font-family:var(--font-b)">${p.model}</td><td>${fmtRs(p.price)}</td><td>${p.units.toLocaleString("en-IN")}</td></tr>`).join("")}</table>
+          <p class="small muted" style="margin-top:8px">Prices, specs, compensation packages and executed licence deals are public. Budgets, costs and P&Ls stay private.</p>
+        </div>
+      </div>`;
+}
+function leaderboardHTML(lb){
+  if(!lb||!lb.length)return "";
+  const spark=row=>{
+    const us=row.units||[];const mx=Math.max(...lb.flatMap(x=>x.units||[1]),1);
+    const pts=us.map((u,i)=>`${(i/(Math.max(us.length-1,1))*70).toFixed(1)},${(20-u/mx*18).toFixed(1)}`).join(" ");
+    return `<svg class="spark" width="74" height="22"><polyline points="${pts}" fill="none" stroke="${row.color}" stroke-width="2"/></svg>`;
+  };
+  return `<table><tr><th>#</th><th>Team</th><th>BSC (cum.)</th><th>BSC (qtr)</th><th>Units trend</th><th>Share</th><th>Rep</th><th>Cum. profit (L)</th></tr>`+
+    lb.map((x,i)=>`<tr><td>${i+1}</td><td><span class="teamdot" style="background:${x.color}"></span>${x.name}${x.isBot?' <span class="pill bot">BOT</span>':""}${x.bankrupt?' <span class="pill warnp">ADMIN</span>':""}</td>
+      <td><b>${x.bscCum.toFixed(1)}</b></td><td>${x.bscQ.toFixed(1)}</td><td>${spark(x)}</td><td>${(x.share*100).toFixed(1)}%</td>
+      <td>${x.rep.toFixed(2)}</td><td class="${x.cumProfit<0?'v neg':''}">${fmtL(x.cumProfit)}</td></tr>`).join("")+`</table>`;
+}
+function privatePackHTML(t,r){
+  const pl=[["Vehicle revenue",r.revenue,0],["Cost of goods sold",-r.cogs,0],["Gross profit",r.grossProfit,1],
+    ["Advertising",-r.ad,0],["Sales staff payroll",-r.salesPayroll,0],["Plant payroll",-r.plantPayroll,0],
+    ["Experience centre running costs",-r.netOpex,0],["Fixed production overhead",-r.fixed,0],["G&A",-r.ga,0],
+    ["Warranty provision",-r.warranty,0],["Quality improvement",-r.quality,0],["R&D projects started",-r.rndSpend,0],
+    ["Licence fees paid",-r.licPaid,0],["Licensing income",r.licRecd,0],["Development / re-engineering",-r.dev,0],
+    ["Market research",-r.research,0],["Inventory holding",-r.holding,0],["EBITDA",r.ebitda,1],
+    ["Interest (bank / bond / emergency)",-r.interest,0],["Depreciation",-r.dep,0],["New experience centres",-r.centreOpen,0],
+    ["Quarter profit",r.profit,1]];
+  const cashMemo=`<div class="small muted" style="margin-top:6px;font-family:var(--font-m)">Cash memo: profit ${fmtL(r.profit)} + depreciation ${fmtL(r.dep)} ${r.deltaInv>=0?"- inventory build "+fmtL(r.deltaInv):"+ inventory release "+fmtL(-r.deltaInv)} - capacity capex ${fmtL(r.capex)}${r.vcDeal&&r.vcDeal.funded>0?" + VC "+fmtL(r.vcDeal.funded):""}${r.ltIssued?" + bond "+fmtL(r.ltIssued):""}</div>`;
+  const modelTbl=`<table><tr><th>Model</th><th>Price</th>${SEGMENTS.map(s=>`<th>${s.name}</th>`).join("")}<th>Total</th></tr>`+
+    r.modelRows.map(m=>`<tr><td>${m.name}</td><td>${(m.price/1000).toFixed(0)}k</td>${SEGMENTS.map(s=>`<td>${Math.round(m.segSales[s.id]).toLocaleString("en-IN")}</td>`).join("")}<td><b>${m.units.toLocaleString("en-IN")}</b></td></tr>`).join("")+`</table>`;
+  const judgTbl=r.judg?`<label class="f" style="margin-top:12px">Customer judgments (0-100) · product / price / campaign</label>
+    <table><tr><th>Segment</th><th>Product</th><th>Price</th><th>Campaign</th></tr>${SEGMENTS.map(s=>{
+      const j=r.judg[s.id];return `<tr><td>${s.name}${s.id===t.prim?" ◂P":s.id===t.sec?" ◂S":""}</td><td>${j.p}</td><td>${j.pr}</td><td>${j.c}</td></tr>`;}).join("")}</table>
+    ${r.overP?'<div class="small warn" style="margin-top:4px">Overpromise flagged: a campaign claim was not backed by product scores. Satisfaction penalty applied.</div>':""}`:"";
+  const bscTbl=`<label class="f" style="margin-top:12px">Balanced scorecard · this quarter (indicators multiply; a weak dial drags the whole score)</label>
+    <table class="bsc"><tr><th>Indicator</th><th>Score</th></tr>
+    ${Object.keys(BSC_LABELS).map(k=>`<tr><td>${BSC_LABELS[k]}</td><td>${r.bsc.parts[k].toFixed(2)}</td></tr>`).join("")}
+    <tr class="total"><td>Total business performance</td><td>${r.bsc.total.toFixed(1)}</td></tr></table>`;
+  const bs=`<label class="f" style="margin-top:12px">Balance sheet (Rs. L)</label>
+    <table><tr><th>Assets</th><th></th><th>Liabilities & equity</th><th></th></tr>
+    <tr><td>Cash</td><td>${fmtL(t.cash)}</td><td>Bank credit line</td><td>${fmtL(t.debt.bank)}</td></tr>
+    <tr><td>Inventory</td><td>${fmtL(r.invValue)}</td><td>5-year bond</td><td>${fmtL(t.debt.lt)}</td></tr>
+    <tr><td>Plant & equipment (net)</td><td>${fmtL(t.ppe)}</td><td>Emergency loan</td><td>${fmtL(t.debt.shark)}</td></tr>
+    <tr><td></td><td></td><td>Paid-in capital</td><td>${fmtL(t.paidIn)}</td></tr>
+    <tr><td></td><td></td><td>Retained earnings</td><td class="${t.cumProfit<0?'v neg':''}">${fmtL(t.cumProfit)}</td></tr>
+    <tr class="total"><td>Total</td><td>${fmtL(t.cash+r.invValue+t.ppe)}</td><td>Total</td><td>${fmtL(t.debt.bank+t.debt.lt+t.debt.shark+t.paidIn+t.cumProfit)}</td></tr></table>`;
+  const ops=`<div class="kpis" style="margin-top:12px;grid-template-columns:repeat(4,1fr)">
+    <div class="kpi"><div class="k-l">Capacity utilization</div><div class="k-v">${(r.util*100).toFixed(0)}%</div></div>
+    <div class="kpi"><div class="k-l">Reliability</div><div class="k-v">${r.reliab.toFixed(2)}</div></div>
+    <div class="kpi"><div class="k-l">Network reach</div><div class="k-v">${(r.reach*100).toFixed(0)}%</div></div>
+    <div class="kpi"><div class="k-l">Ending inventory</div><div class="k-v" style="color:${r.endInv>r.produced*.3?'var(--amber)':'inherit'}">${r.endInv.toLocaleString("en-IN")}</div></div>
+  </div>`;
+  const equityLine=`<div class="small mono" style="margin-top:10px">Equity: Founders ${r.equity.f.toFixed(1)}% · VC ${r.equity.vc.toFixed(1)}% · Emergency lender ${r.equity.em.toFixed(1)}%${r.vcDeal&&r.vcDeal.funded>0?` · <span style="color:var(--green-deep)">VC funding received: Rs. ${r.vcDeal.funded.toLocaleString("en-IN")} L</span>`:""}${r.bankrupt?' · <span class="warn">UNDER ADMINISTRATION</span>':""}</div>`;
+  const techLine=t.techs.length||t.rnd.length?`<div class="small mono" style="margin-top:8px">Technologies: ${t.techs.map(id=>techById(id).name).join(" · ")||"none"}${t.rnd.length?` · In the lab: ${t.rnd.map(p=>techById(p.id).name+" (Q"+p.qDone+")").join(", ")}`:""}</div>`:"";
+  const charterLine=t.vision?`<div class="small muted" style="margin-top:8px"><b>Vision:</b> ${t.vision} <b style="margin-left:8px">Mission:</b> ${t.mission}</div>`:"";
+  const intelBlk=r.intel?`<label class="f" style="margin-top:14px">Competitor intelligence report (purchased)</label>
+    <table><tr><th>Firm</th><th>Ad budget (L)</th><th>Avg awareness</th><th>Centres · staff</th><th>Technologies · models</th></tr>${
+    r.intel.map(x=>`<tr><td><span class="teamdot" style="background:${x.color}"></span>${x.name}</td><td>~${x.adBudget}</td><td>${x.awAvg}</td><td>${x.centres} · ${x.staff}</td><td style="text-align:left;font-family:var(--font-b);font-size:11.5px">${x.techs.length?x.techs.join(", ")+" · ":""}${x.models.map(m=>m.name+" ~"+fmtRs(m.estCost)).join(" · ")}</td></tr>`).join("")}</table>`:"";
+  const clinicBlk=r.clinic?`<label class="f" style="margin-top:14px">Customer clinic (purchased) · product/price judgment by segment, all models</label>
+    <table><tr><th>Model</th>${SEGMENTS.map(s=>`<th>${s.name}</th>`).join("")}</tr>${
+    r.clinic.map(x=>`<tr><td><span class="teamdot" style="background:${x.color}"></span>${x.model}</td>${SEGMENTS.map(s=>`<td>${x.cells[s.id]}</td>`).join("")}</tr>`).join("")}</table>`:"";
+  return `${charterLine}
+      <div class="kpis" style="margin:10px 0 12px;grid-template-columns:repeat(5,1fr)">
+        <div class="kpi"><div class="k-l">Units sold</div><div class="k-v">${r.units.toLocaleString("en-IN")}</div></div>
+        <div class="kpi"><div class="k-l">Lost sales</div><div class="k-v" style="color:${r.lost>0?'var(--red)':'inherit'}">${r.lost.toLocaleString("en-IN")}</div></div>
+        <div class="kpi"><div class="k-l">Output lost (chg + HR)</div><div class="k-v" style="color:${r.chLoss>0?'var(--amber)':'inherit'}">${(r.chLoss||0).toLocaleString("en-IN")}</div></div>
+        <div class="kpi"><div class="k-l">Quarter profit (L)</div><div class="k-v" style="color:${r.profit<0?'var(--red)':'var(--green-deep)'}">${fmtL(r.profit)}</div></div>
+        <div class="kpi"><div class="k-l">BSC this quarter</div><div class="k-v">${r.bsc.total.toFixed(1)}</div></div>
+      </div>
+      <div class="grid2">
+        <div>${pl.map(([l,v,s])=>`<div class="pl-line ${s?"strong":""}"><span class="l">${l}</span><span class="v ${v<0?"neg":(s&&v>0?"pos":"")}">${fmtL(v)}</span></div>`).join("")}
+          ${cashMemo}${bs}
+        </div>
+        <div>${modelTbl}${judgTbl}${bscTbl}
+          <label class="f" style="margin-top:12px">Awareness by segment</label>
+          <div class="qstrip">${SEGMENTS.map(s=>`<span class="qchip">${s.name}<br><b>${r.awSnap[s.id].toFixed(2)}</b></span>`).join("")}</div>
+          ${equityLine}${techLine}
+        </div>
+      </div>
+      ${ops}${intelBlk}${clinicBlk}`;
+}
+function renderTeamResults(){
+  setBadge();
+  const t=G.myTeam,r=t.hist[t.hist.length-1],rep=G.lastReport;
+  root.innerHTML=`
+  <div class="panel"><div class="panel-hd"><h2>Quarter ${rep.q} · public market report</h2><span class="tag">${rep.season} · category ${rep.tam.toLocaleString("en-IN")} units</span></div>
+    <div class="panel-bd">${publicReportHTML(rep)}</div></div>
+  <div class="panel"><div class="panel-hd"><h2>Leaderboard · balanced scorecard</h2><span class="tag">ranked on cumulative BSC (rolling 4 quarters)</span></div>
+    <div class="panel-bd">${leaderboardHTML(G.leaderboard)}</div></div>
+  <div class="panel"><div class="panel-hd"><h2><span class="teamdot" style="background:${t.color}"></span>${t.name} · private results pack</h2><span class="tag">visible only to your team</span></div>
+    <div class="panel-bd">${privatePackHTML(t,r)}</div></div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <span class="pill wait" style="align-self:center">Waiting for the instructor to open Quarter ${G.quarter}...</span>
+    <button class="btn ghost" onclick="renderSurvey()">Market needs survey</button>
+    <button class="btn ghost" onclick="logout()">Sign out</button>
+  </div>
+  <div id="busyBar" class="agenda" style="display:none;margin-top:12px"></div>`;
+  startPoll(refreshTeam,7000);
+}
+function renderFinal(lb){
+  stopPoll();setBadge("Game over");
+  const heights=[190,150,120];
+  root.innerHTML=`
+  <div class="panel"><div class="panel-hd"><h2>Final standings</h2><span class="tag">EV Venture League · ranked on cumulative balanced scorecard</span></div>
+    <div class="panel-bd">
+      <div class="podium">
+        ${lb.slice(0,3).map((x,i)=>`<div class="pod" style="background:${x.color};height:${heights[i]}px;order:${i===0?2:i===1?1:3}">
+          <div class="p-nm">${i+1}. ${x.name}</div><div class="p-sc">BSC ${x.bscCum.toFixed(1)}</div></div>`).join("")}
+      </div>
+      ${leaderboardHTML(lb)}
+      <p class="small muted" style="margin-top:12px">Debrief prompts: Which scorecard dial separated the winner? Who bought technology cheaper than building it, and what did the seller do with the licence income? How did declared vision and target segments match the decision pattern?</p>
+      <div style="margin-top:16px"><button class="btn ghost" onclick="logout()">Sign out</button></div>
+    </div>
+  </div>`;
+}
+
+/* ---------- Market survey (client-side, needs only cfg) ---------- */
+function renderSurvey(){
+  stopPoll();setBadge();
+  const q=Math.min(G.quarter,G.cfg.quarters);
+  let fc="<table><tr><th>Segment</th>";
+  const qs=[];for(let i=0;i<4&&q+i<=G.cfg.quarters;i++)qs.push(q+i);
+  fc+=qs.map(x=>`<th>Q${x} ${seasonOf(x).f>1?"· festive":seasonOf(x).f<1?"· monsoon":""}</th>`).join("")+"</tr>";
+  for(const s of SEGMENTS){
+    fc+=`<tr><td>${s.name}</td>`+qs.map(x=>{
+      const tam=G.cfg.tam0*Math.pow(1+G.cfg.growth,x-1)*seasonOf(x).f;
+      return `<td>${Math.round(tam*s.pct).toLocaleString("en-IN")}</td>`;}).join("")+"</tr>";
+  }
+  fc+=`<tr class="total"><td>Category</td>`+qs.map(x=>{
+    const tam=G.cfg.tam0*Math.pow(1+G.cfg.growth,x-1)*seasonOf(x).f;
+    return `<td>${Math.round(tam).toLocaleString("en-IN")}</td>`;}).join("")+"</tr></table>";
+  const cards=SEGMENTS.map(s=>{
+    const nd=SEG_NEEDS[s.id];
+    return `<div class="segcard">
+      <h3>${s.name} · ${(s.pct*100).toFixed(0)}% of market</h3>
+      <div class="meta">WTP Rs. ${(s.wtp[0]/1e5).toFixed(2)}L - ${(s.wtp[1]/1e5).toFixed(2)}L · Price sensitivity: ${thetaLabel(s.theta)} · Word of mouth: ${kappaLabel(s.kappa)}</div>
+      <div class="small muted">${nd.who}</div>
+      <table class="stars" style="margin-top:8px">${Object.keys(CLAIMS).map(k=>`<tr><td>${CLAIMS[k]}</td><td>${starStr(s.w[k])}</td></tr>`).join("")}</table>
+      <label class="f" style="margin-top:8px">What they are buying</label>
+      <ul>${nd.needs.map(x=>`<li>${x}</li>`).join("")}</ul>
+      <label class="f">Deal breakers</label>
+      <div>${nd.deal.map(x=>`<span class="dealtag">${x}</span>`).join("")}</div>
+      <label class="f" style="margin-top:8px">Price behavior</label>
+      <div class="small">${nd.price}</div>
+    </div>`;
+  }).join("");
+  root.innerHTML=`
+  <div class="panel"><div class="panel-hd"><h2>Syndicated market survey · Indian EV scooter category</h2><span class="tag">refreshed each quarter · complimentary in this edition</span></div>
+    <div class="panel-bd">
+      <p class="small muted" style="margin-bottom:10px">Customers buy benefits, not components. Star ratings show how much each benefit area matters; discovering the exact response functions behind them is your job in the market. Growth ${Math.round(G.cfg.growth*100)}%/quarter with festive (x1.25) and monsoon (x0.9) seasonality.</p>
+      <label class="f">Category demand forecast (units)</label>
+      ${fc}
+      <div class="seggrid" style="margin-top:14px">${cards}</div>
+      <div style="margin-top:16px"><button class="btn" onclick="${SESSION.role==='instructor'?'refreshInstructor()':'refreshTeam()'}">Back</button></div>
+    </div>
+  </div>`;
+}
+
+/* ============================================================
+   INSTRUCTOR CONSOLE
+   ============================================================ */
+async function refreshInstructor(){
+  const r=await api("getGame",{gameId:SESSION.gameId,role:"instructor",pin:SESSION.pin});
+  if(!r.ok){alert(r.error);renderLanding();return;}
+  onInstructorData(r);
+}
+function onInstructorData(r){
+  G=r;const st=r.state;
+  setBadge(st.phase==="gameover"?"Game over":`Quarter ${Math.min(st.quarter,st.cfg.quarters)} of ${st.cfg.quarters}`);
+  const lb=st.teams[0].hist.length?st.teams.map(t=>{
+    const rr=t.hist[t.hist.length-1];
+    return {i:t.i,name:t.name,color:t.color,isBot:t.isBot,bankrupt:t.bankrupt,bscCum:cumBSC(t),bscQ:rr.bsc.total,
+      share:rr.share,rep:t.rep,cumProfit:t.cumProfit,cash:t.cash,units:t.hist.map(h=>h.units)};
+  }).sort((a,b)=>b.bscCum-a.bscCum):[];
+  G.teamsMeta=st.teams.map(t=>({i:t.i,name:t.name,color:t.color}));
+
+  if(st.phase==="gameover"){
+    root.innerHTML="";renderFinal(lb);
+    root.insertAdjacentHTML("beforeend",`<div style="margin-top:10px"><button class="btn ghost" onclick="exportJSON()">Export full game JSON</button><div id="exportArea"></div></div>`);
+    return;
+  }
+  const rows=st.teams.map(t=>`
+    <div class="teamrow">
+      <span class="tname"><span class="teamdot" style="background:${t.color}"></span>${t.name}
+        ${t.isBot?'<span class="pill bot">BOT</span>':t.registered?'':'<span class="pill warnp">not registered</span>'}</span>
+      <span class="mono small muted">Cash ${fmtL(t.cash)} L · Rep ${t.rep.toFixed(2)} · Cap ${t.capacity.toLocaleString("en-IN")} · ${t.centres} centres${t.players?` · ${t.players}`:""}</span>
+      <span>
+        ${t.dec.locked?'<span class="pill ok">Locked in</span>':'<span class="pill wait">Pending</span>'}
+        ${!t.isBot&&t.dec.locked&&st.phase==="decisions"?`<button class="btn tiny ghost" onclick="unlock(${t.i})">Unlock</button>`:""}
+      </span>
+    </div>`).join("");
+  const humanPending=st.teams.filter(t=>!t.isBot&&t.registered&&!t.dec.locked).length;
+  const rep=st.reports.length?st.reports[st.reports.length-1]:null;
+  const tabs=st.teams.map((t,i)=>`<button class="tab ${ui.resultTab===i?"active":""}" onclick="ui.resultTab=${i};onInstructorData(G)">${t.name}</button>`).join("");
+  const tSel=st.teams[Math.min(ui.resultTab,st.teams.length-1)];
+  const rSel=tSel.hist.length?tSel.hist[tSel.hist.length-1]:null;
+
+  root.innerHTML=`
+  <div class="panel"><div class="panel-hd"><h2>${G.name} · instructor console</h2>
+    <span class="tag">Game ID <b>${SESSION.gameId}</b> · Join code <b>${G.joinCode}</b> · ${seasonOf(st.quarter).label}</span></div>
+    <div class="panel-bd">
+      <div class="agenda">${agendaFor(st.quarter,st.cfg.vcQuarter)}</div>
+      ${rows}
+      <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        ${st.phase==="decisions"?`
+          <button class="btn big" onclick="runQ(false)">Run Quarter ${st.quarter}</button>
+          ${humanPending?`<button class="btn ghost danger" onclick="runQ(true)">Force run (${humanPending} team${humanPending>1?"s":""} pending)</button>`:""}`:
+          `<button class="btn big" onclick="openNext()">Open Quarter ${st.quarter} decisions</button>
+           <span class="small muted">Results are live on every team's screen.</span>`}
+        <button class="btn ghost" onclick="refreshInstructor()">Refresh</button>
+        <button class="btn ghost" onclick="renderSurvey()">Market survey</button>
+        <button class="btn ghost" onclick="exportJSON()">Export JSON</button>
+        <button class="btn ghost" onclick="logout()">Sign out</button>
+      </div>
+      <div id="exportArea"></div>
+      <div class="warn" id="runErr"></div>
+      <div id="busyBar" class="agenda" style="display:none;margin-top:12px"></div>
+    </div>
+  </div>
+  ${rep?`
+  <div class="panel"><div class="panel-hd"><h2>Quarter ${rep.q} · public market report</h2><span class="tag">${rep.season}</span></div>
+    <div class="panel-bd">${publicReportHTML(rep)}</div></div>
+  <div class="panel"><div class="panel-hd"><h2>Leaderboard · balanced scorecard</h2></div><div class="panel-bd">${leaderboardHTML(lb)}</div></div>
+  <div class="panel"><div class="panel-hd"><h2>Firm results (instructor view)</h2><span class="tag">private packs, all teams</span></div>
+    <div class="tabs">${tabs}</div>
+    <div class="panel-bd">${rSel?privatePackHTML(tSel,rSel):'<p class="small muted">No results yet.</p>'}</div></div>`:""}`;
+  if(st.phase==="decisions")startPoll(refreshInstructor,10000);else stopPoll();
+}
+async function unlock(i){
+  busy(true);
+  await api("unlockTeam",{gameId:SESSION.gameId,pin:SESSION.pin,teamIndex:i});
+  refreshInstructor();
+}
+async function runQ(force){
+  busy(true,"Running the quarter on the league server...");
+  const r=await api("runQuarter",{gameId:SESSION.gameId,pin:SESSION.pin,force:!!force});
+  busy(false);
+  if(!r.ok){document.getElementById("runErr").textContent=r.error;return;}
+  refreshInstructor();
+}
+async function openNext(){
+  busy(true);
+  const r=await api("openNextQuarter",{gameId:SESSION.gameId,pin:SESSION.pin});
+  busy(false);
+  if(!r.ok){alert(r.error);return;}
+  refreshInstructor();
+}
+async function exportJSON(){
+  const r=await api("exportState",{gameId:SESSION.gameId,pin:SESSION.pin});
+  if(!r.ok){alert(r.error);return;}
+  document.getElementById("exportArea").innerHTML=`<label class="f" style="margin-top:10px">Full game state (copy for your records / analysis in R)</label>
+    <textarea class="save" onclick="this.select()" readonly>${JSON.stringify(r.state)}</textarea>`;
+}
+
+/* boot */
+if(typeof API_URL!=="string"||API_URL.indexOf("https://script.google.com")!==0){
+  root.innerHTML='<div class="panel"><div class="panel-bd"><b>Setup needed:</b> open index.html and paste your Apps Script Web App URL into the API_URL constant near the top of the file.</div></div>';
+}else renderLanding();
+
+</script>
+</body>
+</html>
