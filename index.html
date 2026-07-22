@@ -532,7 +532,9 @@ function renderLanding(){
       <div class="warn" id="authErr" style="margin-top:8px"></div>
       <div id="busyBar" class="agenda" style="display:none;margin-top:12px"></div>
     </div>
-  </div>`;
+  </div>
+  <p class="small muted" style="text-align:center;margin-top:6px"><a href="#" onclick="showClaimAdmin();return false;" style="color:var(--muted)">Platform admin setup</a></p>
+  <div id="claimArea"></div>`;
   document.getElementById("foot").innerHTML="<b>EV Venture League</b> · one account per person, instructor or student. Creating a universe makes you its instructor; joining a team makes you a student in it. The same account can do both, in different universes.";
 }
 function showSignup(){
@@ -568,6 +570,25 @@ async function logout(){
   SESSION={};saveSession();G=null;MY=null;
   renderLanding();
 }
+function showClaimAdmin(){
+  const area=document.getElementById("claimArea");
+  if(!area)return;
+  if(!SESSION.token){area.innerHTML=`<div class="warn" style="text-align:center;margin-top:8px">Log in or create your account first, then use this link again to claim platform-admin rights with the setup key.</div>`;return;}
+  area.innerHTML=`<div class="charterbox" style="max-width:420px;margin:10px auto"><b style="font-family:var(--font-d)">Claim platform-admin rights</b>
+    <p class="small muted">Enter the setup key your institution set in Code.gs (ADMIN_SETUP_KEY). This is one-time per account and cannot be done by anyone who doesn't have that key.</p>
+    <input id="claimKey" type="password" style="width:100%;margin-bottom:8px" placeholder="Setup key">
+    <button class="btn" onclick="doClaimAdmin()">Claim admin</button>
+    <div class="warn" id="claimErr" style="margin-top:6px"></div></div>`;
+}
+async function doClaimAdmin(){
+  const setupKey=document.getElementById("claimKey").value;
+  busy(true);
+  const r=await api("claimAdmin",withToken({setupKey}));
+  busy(false);
+  if(!r.ok){document.getElementById("claimErr").textContent=r.error;return;}
+  SESSION.user.isAdmin=true;saveSession();
+  renderDashboard();
+}
 
 /* ============================================================
    DASHBOARD
@@ -578,11 +599,13 @@ async function renderDashboard(){
   const r=await api("me",withToken());
   busy(false);
   if(!r.ok){alert(r.error);logout();return;}
+  SESSION.user=Object.assign(SESSION.user||{},r.user);saveSession();
   const owned=r.universes.filter(u=>u.role==="owner");
   const member=r.universes.filter(u=>u.role==="member");
   root.innerHTML=`
-  <div class="panel"><div class="panel-hd"><h2>Hi, ${r.user.name}</h2><span class="tag">${r.user.email}</span></div>
+  <div class="panel"><div class="panel-hd"><h2>Hi, ${r.user.name}</h2><span class="tag">${r.user.email}${r.user.isAdmin?' · <span class="pill bot">PLATFORM ADMIN</span>':""}</span></div>
     <div class="panel-bd">
+      ${r.user.isAdmin?`<button class="btn ghost" style="margin-bottom:14px" onclick="renderAdminConsole()">Open platform admin console</button>`:""}
       <div class="dashsplit">
         <div>
           <h2 class="sect" style="margin-top:0">Universes you run</h2>
@@ -1360,7 +1383,7 @@ function onInstructorData(r){
         ${!t.isBot&&t.dec.locked&&st.phase==="decisions"?`<button class="btn tiny ghost" onclick="unlock(${t.i})">Unlock</button>`:""}
       </span>
     </div>
-    ${!t.isBot?`<div class="small muted" style="margin:-4px 0 8px 18px">${(t.members||[]).map(m=>m.name+" ("+m.email+")").join(", ")||"waiting for students to join"}</div>`:""}`).join("");
+    ${!t.isBot?`<div class="small muted" style="margin:-4px 0 8px 18px">${(t.members||[]).map(m=>m.name+" ("+m.email+")"+(G.asAdmin?` <a href="#" onclick="adminRemoveMemberInline(${t.i},'${m.userId}','${m.name.replace(/'/g,"")}');return false;" style="color:var(--red)">[remove]</a>`:"")).join(", ")||"waiting for students to join"}</div>`:""}`).join("");
   const humanPending=st.teams.filter(t=>!t.isBot&&(t.members||[]).length&&!t.dec.locked).length;
   const rep=st.reports.length?st.reports[st.reports.length-1]:null;
   const tabs=st.teams.map((t,i)=>`<button class="tab ${ui.resultTab===i?"active":""}" onclick="ui.resultTab=${i};onInstructorData(G)">${t.name}</button>`).join("");
@@ -1405,6 +1428,14 @@ async function unlock(i){
   await api("unlockTeam",withToken({universeId:SESSION.universeId,teamIndex:i}));
   refreshInstructor();
 }
+async function adminRemoveMemberInline(teamIndex,userId,name){
+  if(!confirm("Remove "+name+" from this team's roster?"))return;
+  busy(true);
+  const r=await api("adminRemoveMember",withToken({universeId:SESSION.universeId,teamIndex,userId}));
+  busy(false);
+  if(!r.ok){alert(r.error);return;}
+  refreshInstructor();
+}
 async function runQ(force){
   busy(true,"Running the quarter on the league server...");
   const r=await api("runQuarter",withToken({universeId:SESSION.universeId,force:!!force}));
@@ -1430,6 +1461,119 @@ async function exportJSON(){
 if(typeof API_URL!=="string"||API_URL.indexOf("https://script.google.com")!==0){
   root.innerHTML='<div class="panel"><div class="panel-bd"><b>Setup needed:</b> open index.html and paste your Apps Script Web App URL into the API_URL constant near the top of the file.</div></div>';
 }else if(SESSION.token){renderDashboard();}else{renderLanding();}
+
+/* ============================================================
+   PLATFORM ADMIN CONSOLE
+   ============================================================ */
+let adminData={users:[],universes:[],tab:"universes"};
+async function renderAdminConsole(){
+  stopPoll();setBadge("Platform admin");
+  busy(true);
+  const [ru,rg]=await Promise.all([api("adminListUsers",withToken()),api("adminListUniverses",withToken())]);
+  busy(false);
+  if(!ru.ok){alert(ru.error);renderDashboard();return;}
+  adminData.users=ru.users;adminData.universes=rg.universes||[];
+  drawAdminConsole();
+}
+function drawAdminConsole(){
+  const t=adminData.tab;
+  root.innerHTML=`
+  <div class="panel"><div class="panel-hd"><h2>Platform admin console</h2><span class="tag">manages every universe and every account</span></div>
+    <div class="panel-bd">
+      <div class="qstrip" style="margin-bottom:14px">
+        <button class="chip" style="${t==='universes'?'background:var(--green-tint);border-color:var(--green);color:var(--green-deep)':''}" onclick="adminData.tab='universes';drawAdminConsole()">All universes (${adminData.universes.length})</button>
+        <button class="chip" style="${t==='users'?'background:var(--green-tint);border-color:var(--green);color:var(--green-deep)':''}" onclick="adminData.tab='users';drawAdminConsole()">All accounts (${adminData.users.length})</button>
+      </div>
+      ${t==="universes"?adminUniversesHTML():adminUsersHTML()}
+      <div style="margin-top:16px"><button class="btn ghost" onclick="renderDashboard()">Back to my dashboard</button> <button class="btn ghost" onclick="renderAdminConsole()">Refresh</button></div>
+      <div id="busyBar" class="agenda" style="display:none;margin-top:12px"></div>
+    </div>
+  </div>`;
+}
+function adminUniversesHTML(){
+  const userOpt=u=>`<option value="${u.userId}">${u.name} (${u.email})</option>`;
+  return `<table><tr><th>Universe</th><th>Owner</th><th>Status</th><th>ID / join code</th><th></th></tr>
+    ${adminData.universes.map(u=>`<tr>
+      <td style="text-align:left;font-family:var(--font-b)">${u.name}</td>
+      <td style="text-align:left;font-family:var(--font-b)">${u.ownerEmail}</td>
+      <td>${u.status}</td>
+      <td class="mono">${u.universeId} / ${u.joinCode}</td>
+      <td style="text-align:left"><button class="btn tiny ghost" onclick="openUniverse('${u.universeId}')">Open</button>
+        <select id="own_${u.universeId}" style="font-size:11px">${adminData.users.map(userOpt).join("")}</select>
+        <button class="btn tiny ghost" onclick="adminReassign('${u.universeId}')">Reassign</button>
+        <button class="btn tiny ghost" style="color:var(--red)" onclick="adminDelete('${u.universeId}','${u.name.replace(/'/g,"")}')">Delete</button></td>
+    </tr>`).join("")}
+  </table>
+  <p class="small muted" style="margin-top:10px">"Open" enters the instructor console for that universe with full control (run quarters, unlock teams, export), even though you don't own it. "Reassign" transfers ownership to the selected account. "Delete" removes the universe and its memberships permanently.</p>`;
+}
+function adminUsersHTML(){
+  return `<div class="charterbox">
+    <b style="font-family:var(--font-d)">Create an account directly</b>
+    <div class="setuprow" style="margin-top:8px">
+      <div><label class="f">Name</label><input id="ncName" style="width:160px"></div>
+      <div><label class="f">Email</label><input id="ncEmail" type="email" style="width:200px"></div>
+      <div><label class="f">Temporary password</label><input id="ncPass" type="text" style="width:150px" placeholder="min 6 chars"></div>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12.5px"><input type="checkbox" id="ncAdmin"> Grant admin</label>
+      <button class="btn ghost" onclick="adminCreateAccount()">Create</button>
+    </div>
+    <div class="warn" id="ncErr"></div>
+    <p class="small muted" style="margin-top:6px">Give the person their email and this password; they can log in immediately (no confirmation email is sent — there's no email-sending setup in this free stack).</p>
+  </div>
+  <table><tr><th>Name</th><th>Email</th><th>Created</th><th>Role</th><th></th></tr>
+    ${adminData.users.map(u=>`<tr>
+      <td style="text-align:left;font-family:var(--font-b)">${u.name}</td>
+      <td style="text-align:left;font-family:var(--font-b)">${u.email}</td>
+      <td class="mono">${new Date(u.createdAt).toLocaleDateString()}</td>
+      <td>${u.isAdmin?'<span class="pill bot">ADMIN</span>':"member"}</td>
+      <td style="text-align:left">
+        <button class="btn tiny ghost" onclick="adminResetPw('${u.userId}','${u.email}')">Reset password</button>
+        ${u.isAdmin?(u.userId===SESSION.user.userId?"":`<button class="btn tiny ghost" onclick="adminToggleAdmin('${u.userId}',false)">Revoke admin</button>`):
+          `<button class="btn tiny ghost" onclick="adminToggleAdmin('${u.userId}',true)">Grant admin</button>`}
+      </td>
+    </tr>`).join("")}
+  </table>`;
+}
+async function adminCreateAccount(){
+  const name=document.getElementById("ncName").value.trim(),email=document.getElementById("ncEmail").value.trim(),password=document.getElementById("ncPass").value,isAdmin=document.getElementById("ncAdmin").checked;
+  busy(true);
+  const r=await api("adminCreateAccount",withToken({name,email,password,isAdmin}));
+  busy(false);
+  if(!r.ok){document.getElementById("ncErr").textContent=r.error;return;}
+  renderAdminConsole();
+}
+async function adminResetPw(userId,email){
+  const pw=prompt("New temporary password for "+email+" (min 6 characters):");
+  if(!pw)return;
+  busy(true);
+  const r=await api("adminSetPassword",withToken({userId,newPassword:pw}));
+  busy(false);
+  if(!r.ok){alert(r.error);return;}
+  alert("Password reset. Share the new password with "+email+" directly.");
+}
+async function adminToggleAdmin(userId,grant){
+  if(!confirm((grant?"Grant":"Revoke")+" platform-admin rights for this account?"))return;
+  busy(true);
+  const r=await api("adminSetAdmin",withToken({userId,grant}));
+  busy(false);
+  if(!r.ok){alert(r.error);return;}
+  renderAdminConsole();
+}
+async function adminReassign(universeId){
+  const newOwnerId=document.getElementById("own_"+universeId).value;
+  busy(true);
+  const r=await api("adminSetOwner",withToken({universeId,newOwnerId}));
+  busy(false);
+  if(!r.ok){alert(r.error);return;}
+  renderAdminConsole();
+}
+async function adminDelete(universeId,name){
+  if(!confirm(`Permanently delete "${name}" and all its memberships? This cannot be undone.`))return;
+  busy(true);
+  const r=await api("adminDeleteUniverse",withToken({universeId}));
+  busy(false);
+  if(!r.ok){alert(r.error);return;}
+  renderAdminConsole();
+}
 
 </script>
 </body>
