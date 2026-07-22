@@ -138,6 +138,27 @@
   .bsc td:first-child{font-size:11.5px}
   .charterbox{background:var(--paper);border-radius:8px;padding:12px;margin-bottom:12px}
   .charterbox textarea{width:100%;height:52px;font-size:12.5px}
+
+/* ---- v5 additions: auth, dashboard, members, visuals, deep compare ---- */
+.authcard{max-width:420px;margin:30px auto}
+.memberchips{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px}
+.mchip{font-family:var(--font-m);font-size:10.5px;background:var(--paper);border-radius:999px;padding:3px 9px}
+.mchip.you{background:var(--green-tint);color:var(--green-deep);font-weight:600}
+.ucard{border:1.5px solid var(--line);border-radius:10px;padding:13px 15px;margin-bottom:10px;background:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.ucard:hover{border-color:var(--green)}
+.ucard .un{font-family:var(--font-d);font-weight:600;font-size:15px}
+.slotgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+@media(max-width:800px){.slotgrid{grid-template-columns:1fr}}
+.slotcard{border:1.5px solid var(--line-soft);border-radius:8px;padding:9px 11px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.svgwrap{background:var(--paper);border-radius:8px;padding:6px;display:flex;align-items:center;justify-content:center}
+.bikepreview{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:8px 0}
+.storerow{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.gaugewrap{display:flex;align-items:center;gap:10px}
+.cmp-table{width:100%;overflow-x:auto;display:block}
+.cmp-table table{min-width:760px}
+.speclbl{font-family:var(--font-m);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.dashsplit{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:900px){.dashsplit{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -266,7 +287,7 @@ const SEG_NEEDS={
 const thetaLabel=t=>t<=0.7?"Low":t<=1.0?"Moderate":t<=1.25?"High":"Very high";
 const kappaLabel=k=>k>=1.1?"Very strong":k>=0.85?"Strong":k>=0.7?"Moderate":"Modest";
 const starStr=w=>{const n=w>=20?5:w>=14?4:w>=9?3:w>=5?2:1;return "★".repeat(n)+"<span style='opacity:.25'>"+"★".repeat(5-n)+"</span>";};
-const TEAM_COLORS=["#0B9E63","#3D7EA6","#8A5FBF","#C77D0A","#C03A2B","#2A3630"];
+const TEAM_COLORS=["#0B9E63","#3D7EA6","#8A5FBF","#C77D0A","#C03A2B","#2A3630","#1F8A8C","#A6355C","#5C7A29","#7A4B8A"];
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const clamp10=v=>clamp(v,0,10);
 const fmtRs=v=>"Rs. "+Math.round(v).toLocaleString("en-IN");
@@ -353,7 +374,7 @@ const ARCH_KEYS=["commuter","premium","budget","fleeteco"];
 
 
 /* ============================================================
-   EV VENTURE LEAGUE · MULTIPLAYER CLIENT
+   EV VENTURE LEAGUE · MULTIPLAYER CLIENT (v5 · accounts + universes)
    Talks to the Apps Script API. All authoritative logic runs
    server-side; this file renders views and previews decisions.
    ============================================================ */
@@ -394,128 +415,240 @@ function enforceModelRules(m){
   for(const a of ADDONS)if(m.add[a.id]&&a.req&&!a.req(m)){m.add[a.id]=false;msgs.push(`${a.name} removed (requirement lost).`);}
   return msgs;
 }
+function labelOf(cat,id){const o=CATALOG[cat].opts.find(x=>x.id===id);if(!o)return id;const desc=o.name.replace(/^[A-Za-z0-9]+\s*·\s*/,"");return desc||o.name;}
+function initials(name){return (name||"?").trim().split(/\s+/).slice(0,2).map(w=>w[0]).join("").toUpperCase();}
+
+/* ============================================================
+   SVG VISUALS — generative, built from the team's own choices.
+   No external assets; pure vector shapes colored by spec tier.
+   ============================================================ */
+function svgScooter(m,color,w){
+  w=w||210;const h=Math.round(w*0.62);
+  const build=m.cfg.build, wheels=m.cfg.wheels, batt=m.cfg.battery, tech=m.cfg.tech, pt=m.cfg.powertrain;
+  const bodyTone={BD1:color,BD2:shade(color,10),BD3:shade(color,28)}[build]||color;
+  const wheelR=Math.round(h*0.19);
+  const wheelFill=wheels==="ALLOY"?"#2A3630":"#4a4a4a";
+  const spoke=wheels==="ALLOY"?`<circle cx="0" cy="0" r="${wheelR*0.45}" fill="none" stroke="#fff" stroke-width="1.5"/>`:
+    Array.from({length:6}).map((_,i)=>`<line x1="0" y1="0" x2="${(wheelR*0.85*Math.cos(i*Math.PI/3)).toFixed(1)}" y2="${(wheelR*0.85*Math.sin(i*Math.PI/3)).toFixed(1)}" stroke="#ccc" stroke-width="1"/>`).join("");
+  const battBars={BC1:5,BC2:4,BC3:3,BC4:2,BC5:1}[batt]||3;
+  const techGlow=["CT3","CT4"].includes(tech);
+  const boost=["PT1","PT2"].includes(pt);
+  const cx1=w*0.26,cx2=w*0.78,cy=h*0.78;
+  return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="${w*0.52}" cy="${h*0.95}" rx="${w*0.42}" ry="${h*0.05}" fill="#00000014"/>
+    <path d="M ${w*0.10} ${cy} Q ${w*0.14} ${h*0.40} ${w*0.30} ${h*0.42} L ${w*0.46} ${h*0.42} Q ${w*0.55} ${h*0.30} ${w*0.62} ${h*0.30} L ${w*0.62} ${h*0.42} Q ${w*0.80} ${h*0.44} ${w*0.86} ${cy} L ${w*0.80} ${cy} Q ${w*0.78} ${h*0.55} ${w*0.60} ${h*0.55} L ${w*0.34} ${h*0.55} Q ${w*0.18} ${h*0.55} ${w*0.16} ${cy} Z" fill="${bodyTone}" stroke="#131C17" stroke-width="1.5"/>
+    <rect x="${w*0.56}" y="${h*0.16}" width="${w*0.06}" height="${h*0.16}" rx="2" fill="#2A3630"/>
+    ${techGlow?`<circle cx="${w*0.59}" cy="${h*0.22}" r="${w*0.018}" fill="#7FE0C4"/>`:""}
+    <rect x="${w*0.36}" y="${h*0.44}" width="${w*0.05}" height="${h*0.10*battBars/5}" fill="#1F8A8C" opacity=".85"/>
+    ${boost?`<path d="M ${w*0.83} ${h*0.5} l ${w*0.05} 0 l -${w*0.02} ${h*0.06} l ${w*0.03} 0 l -${w*0.06} ${h*0.09} l ${w*0.015} -${h*0.06} l -${w*0.03} 0 Z" fill="#F0B429"/>`:""}
+    <g transform="translate(${cx1},${cy})">${spoke}<circle r="${wheelR}" fill="none" stroke="${wheelFill}" stroke-width="3.5"/></g>
+    <g transform="translate(${cx2},${cy})">${spoke}<circle r="${wheelR}" fill="none" stroke="${wheelFill}" stroke-width="3.5"/></g>
+  </svg>`;
+}
+function shade(hex,pct){
+  hex=hex.replace("#","");const n=parseInt(hex,16);
+  let r=(n>>16)&255,g=(n>>8)&255,b=n&255;
+  r=Math.max(0,r-pct*2);g=Math.max(0,g-pct*2);b=Math.max(0,b-pct*2);
+  return "#"+[r,g,b].map(v=>Math.round(v).toString(16).padStart(2,"0")).join("");
+}
+function svgStoreRow(count,color,max){
+  max=max||10;const shown=Math.min(count,max);
+  let s=`<svg width="${shown*22+4}" height="26" viewBox="0 0 ${shown*22+4} 26" xmlns="http://www.w3.org/2000/svg">`;
+  for(let i=0;i<shown;i++){
+    const x=i*22+2;
+    s+=`<g transform="translate(${x},2)">
+      <path d="M0 8 L10 0 L20 8 L20 22 L0 22 Z" fill="${color}22" stroke="${color}" stroke-width="1.3"/>
+      <rect x="6" y="13" width="8" height="9" fill="${color}" opacity=".8"/>
+    </g>`;
+  }
+  s+="</svg>";
+  return s+(count>max?`<span class="small muted"> +${count-max} more</span>`:"");
+}
+function svgGauge(pct,color,label){
+  pct=clamp(pct,0,1);const w=120,h=70,r=52,cx=60,cy=64;
+  const a0=Math.PI,a1=Math.PI-pct*Math.PI;
+  const x0=cx+r*Math.cos(a0),y0=cy+r*Math.sin(a0),x1=cx+r*Math.cos(a1),y1=cy+r*Math.sin(a1);
+  const large=pct>0.5?1:0;
+  return `<svg width="${w}" height="${h+16}" viewBox="0 0 ${w} ${h+16}" xmlns="http://www.w3.org/2000/svg">
+    <path d="M ${cx-r} ${cy} A ${r} ${r} 0 0 1 ${cx+r} ${cy}" fill="none" stroke="var(--line)" stroke-width="10" stroke-linecap="round"/>
+    <path d="M ${x0.toFixed(1)} ${y0.toFixed(1)} A ${r} ${r} 0 ${large} 1 ${x1.toFixed(1)} ${y1.toFixed(1)}" fill="none" stroke="${color}" stroke-width="10" stroke-linecap="round"/>
+    <text x="${cx}" y="${cy-4}" text-anchor="middle" font-family="IBM Plex Mono" font-size="17" font-weight="600" fill="var(--ink)">${Math.round(pct*100)}%</text>
+    ${label?`<text x="${cx}" y="${h+12}" text-anchor="middle" font-family="IBM Plex Mono" font-size="9.5" fill="var(--muted)">${label}</text>`:""}
+  </svg>`;
+}
+function svgFactory(util,color){
+  const w=150,h=90,fillH=Math.round(50*clamp(util,0,1));
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">
+    <rect x="8" y="34" width="90" height="48" fill="#fff" stroke="${color}" stroke-width="1.5"/>
+    <path d="M8 34 L8 20 L28 34 L28 20 L48 34 L48 20 L68 34 L68 20 L98 34" fill="none" stroke="${color}" stroke-width="1.5"/>
+    <rect x="18" y="${82-fillH}" width="16" height="${fillH}" fill="${color}" opacity=".65"/>
+    <rect x="42" y="${82-fillH}" width="16" height="${fillH}" fill="${color}" opacity=".65"/>
+    <rect x="66" y="${82-fillH}" width="16" height="${fillH}" fill="${color}" opacity=".65"/>
+    <rect x="104" y="10" width="8" height="72" fill="#8a8a8a"/>
+    <ellipse cx="108" cy="8" rx="9" ry="5" fill="#D8DED9" opacity=".7"/>
+    <ellipse cx="115" cy="2" rx="11" ry="6" fill="#D8DED9" opacity=".5"/>
+    <rect x="8" y="82" width="90" height="4" fill="${color}"/>
+  </svg>`;
+}
 
 /* ------- session, transport ------- */
 const root=document.getElementById("root");
 const qbadge=document.getElementById("qbadge");
-let SESSION={};try{SESSION=JSON.parse(localStorage.evleague||"{}");}catch(e){}
-function saveSession(){localStorage.evleague=JSON.stringify(SESSION);}
-let G=null;          // latest scoped fetch
-let MY=null;         // editable working copy of my team (decision phase)
+let SESSION={};try{SESSION=JSON.parse(localStorage.evleague_v5||"{}");}catch(e){}
+function saveSession(){localStorage.evleague_v5=JSON.stringify(SESSION);}
+let G=null, MY=null;
 let PENDING={rndStarts:[]};
-let ui={editModel:null,resultTab:0,busy:false};
+let ui={editModel:null,resultTab:0,busy:false,view:"landing"};
 let pollTimer=null;
 
 async function api(action,data){
   const res=await fetch(API_URL,{method:"POST",body:JSON.stringify(Object.assign({action},data||{}))});
   return res.json();
 }
+function withToken(data){return Object.assign({token:SESSION.token},data||{});}
 function busy(on,label){
   ui.busy=on;
   const b=document.getElementById("busyBar");
   if(b){b.style.display=on?"block":"none";b.textContent=label||"Talking to the league server...";}
 }
-function setBadge(txt){qbadge.textContent=txt||( G?(G.phase==="gameover"?"Game over":`Quarter ${Math.min(G.quarter,G.cfg.quarters)} of ${G.cfg.quarters}`):"" ) || "EV Venture League";}
+function setBadge(txt){qbadge.textContent=txt||(G?(G.phase==="gameover"?"Game over":`Quarter ${Math.min(G.quarter,G.cfg.quarters)} of ${G.cfg.quarters}`):"")||"EV Venture League";}
 function stopPoll(){if(pollTimer){clearInterval(pollTimer);pollTimer=null;}}
 function startPoll(fn,ms){stopPoll();pollTimer=setInterval(fn,ms||8000);}
 
 /* ============================================================
-   LANDING / CREATE / JOIN
+   AUTH: sign up / log in / dashboard
    ============================================================ */
 function renderLanding(){
   stopPoll();setBadge("Welcome");
-  const canResume=SESSION.gameId&&SESSION.role;
   root.innerHTML=`
-  <div class="grid2">
-    <div class="panel"><div class="panel-hd"><h2>I am a student team</h2><span class="tag">join with the code from your instructor</span></div>
-      <div class="panel-bd">
-        <div class="setuprow">
-          <div><label class="f">Game ID</label><input id="jGid" style="width:110px;text-transform:uppercase" maxlength="6" value="${SESSION.role==='team'?(SESSION.gameId||''):''}"></div>
-          <div><label class="f">Join code</label><input id="jCode" style="width:120px;text-transform:uppercase" maxlength="6"></div>
-          <button class="btn" onclick="lookupGame()">Find game</button>
-        </div>
-        <div id="joinArea"></div>
-        <p class="small muted" style="margin-top:10px">Already registered? Enter Game ID above, then use "Rejoin with team PIN" after finding the game.</p>
+  <div class="authcard panel"><div class="panel-hd"><h2 id="authTitle">Log in</h2></div>
+    <div class="panel-bd">
+      <div id="authFields">
+        <label class="f">Email</label><input id="aEmail" type="email" style="width:100%;margin-bottom:8px" autocomplete="username">
+        <label class="f">Password</label><input id="aPassword" type="password" style="width:100%;margin-bottom:8px" autocomplete="current-password">
       </div>
+      <button class="btn big" id="authBtn" onclick="doLogin()" style="width:100%">Log in</button>
+      <p class="small muted" style="margin-top:12px;text-align:center">New here? <a href="#" onclick="showSignup();return false;">Create an account</a></p>
+      <div class="warn" id="authErr" style="margin-top:8px"></div>
+      <div id="busyBar" class="agenda" style="display:none;margin-top:12px"></div>
     </div>
-    <div class="panel"><div class="panel-hd"><h2>I am the instructor</h2><span class="tag">create a new league or open an existing one</span></div>
-      <div class="panel-bd">
-        <button class="btn" onclick="renderCreate()">Create a new game</button>
-        <div class="setuprow" style="margin-top:14px">
-          <div><label class="f">Game ID</label><input id="iGid" style="width:110px;text-transform:uppercase" maxlength="6" value="${SESSION.role==='instructor'?(SESSION.gameId||''):''}"></div>
-          <div><label class="f">Instructor PIN</label><input id="iPin" type="password" style="width:120px"></div>
-          <button class="btn ghost" onclick="openInstructor()">Open console</button>
+  </div>`;
+  document.getElementById("foot").innerHTML="<b>EV Venture League</b> · one account per person, instructor or student. Creating a universe makes you its instructor; joining a team makes you a student in it. The same account can do both, in different universes.";
+}
+function showSignup(){
+  document.getElementById("authTitle").textContent="Create an account";
+  document.getElementById("authFields").innerHTML=`
+    <label class="f">Full name</label><input id="aName" style="width:100%;margin-bottom:8px" autocomplete="name">
+    <label class="f">Email</label><input id="aEmail" type="email" style="width:100%;margin-bottom:8px" autocomplete="username">
+    <label class="f">Password (min 6 characters)</label><input id="aPassword" type="password" style="width:100%;margin-bottom:8px" autocomplete="new-password">`;
+  document.getElementById("authBtn").setAttribute("onclick","doSignup()");
+  document.getElementById("authBtn").textContent="Create account";
+}
+async function doSignup(){
+  const email=document.getElementById("aEmail").value.trim(),password=document.getElementById("aPassword").value,name=document.getElementById("aName").value.trim();
+  busy(true);
+  const r=await api("signUp",{email,password,name});
+  busy(false);
+  if(!r.ok){document.getElementById("authErr").textContent=r.error;return;}
+  SESSION={token:r.token,user:r.user};saveSession();
+  renderDashboard();
+}
+async function doLogin(){
+  const email=document.getElementById("aEmail").value.trim(),password=document.getElementById("aPassword").value;
+  busy(true);
+  const r=await api("logIn",{email,password});
+  busy(false);
+  if(!r.ok){document.getElementById("authErr").textContent=r.error;return;}
+  SESSION={token:r.token,user:r.user};saveSession();
+  renderDashboard();
+}
+async function logout(){
+  stopPoll();
+  if(SESSION.token)await api("logOut",{token:SESSION.token}).catch(()=>{});
+  SESSION={};saveSession();G=null;MY=null;
+  renderLanding();
+}
+
+/* ============================================================
+   DASHBOARD
+   ============================================================ */
+async function renderDashboard(){
+  stopPoll();setBadge("Dashboard");
+  busy(true);
+  const r=await api("me",withToken());
+  busy(false);
+  if(!r.ok){alert(r.error);logout();return;}
+  const owned=r.universes.filter(u=>u.role==="owner");
+  const member=r.universes.filter(u=>u.role==="member");
+  root.innerHTML=`
+  <div class="panel"><div class="panel-hd"><h2>Hi, ${r.user.name}</h2><span class="tag">${r.user.email}</span></div>
+    <div class="panel-bd">
+      <div class="dashsplit">
+        <div>
+          <h2 class="sect" style="margin-top:0">Universes you run</h2>
+          ${owned.length?owned.map(u=>`<div class="ucard"><span class="un">${u.name}</span><span>
+            <span class="pill ${u.status==='open'?'ok':u.status==='results'?'wait':'bot'}">${u.status}</span>
+            <button class="btn ghost" onclick="openUniverse('${u.universeId}')">Open console</button></span></div>`).join(""):
+            '<p class="small muted">None yet.</p>'}
+          <button class="btn" onclick="renderCreate()">Create a new universe</button>
         </div>
-        <div class="warn" id="iErr"></div>
+        <div>
+          <h2 class="sect" style="margin-top:0">Teams you're on</h2>
+          ${member.length?member.map(u=>`<div class="ucard"><span class="un">${u.name}</span><span>
+            <span class="pill ${u.status==='open'?'ok':u.status==='results'?'wait':'bot'}">${u.status}</span>
+            <button class="btn ghost" onclick="openUniverse('${u.universeId}')">Open</button></span></div>`).join(""):
+            '<p class="small muted">None yet. Ask your instructor for a Universe ID and join code.</p>'}
+          <div class="setuprow" style="margin-top:8px">
+            <div><label class="f">Universe ID</label><input id="jUid" style="width:110px;text-transform:uppercase" maxlength="6"></div>
+            <div><label class="f">Join code</label><input id="jCode" style="width:120px;text-transform:uppercase" maxlength="6"></div>
+            <button class="btn ghost" onclick="lookupUniverse()">Find & join a team</button>
+          </div>
+          <div id="joinArea"></div>
+        </div>
       </div>
+      <div style="margin-top:16px"><button class="btn ghost" onclick="logout()">Sign out</button></div>
+      <div id="busyBar" class="agenda" style="display:none;margin-top:12px"></div>
     </div>
-  </div>
-  ${canResume?`<button class="btn ghost" onclick="resume()">Resume last session (${SESSION.role} · game ${SESSION.gameId})</button>`:""}
-  <div id="busyBar" class="agenda" style="display:none;margin-top:12px"></div>`;
-  document.getElementById("foot").innerHTML="<b>EV Venture League</b> · multiplayer edition. Decisions are private, simulation runs on the league server, results publish to everyone when the instructor closes the quarter.";
+  </div>`;
+  document.getElementById("foot").innerHTML="<b>EV Venture League</b> · one universe holds up to 10 firms, each with up to 6 people. Decisions are private to a team, the simulation runs on the league server, results publish to everyone when the instructor closes the quarter.";
 }
-function resume(){
-  if(SESSION.role==="team")refreshTeam();
-  else if(SESSION.role==="instructor")refreshInstructor();
-}
-async function lookupGame(){
-  const gameId=document.getElementById("jGid").value.trim().toUpperCase();
+async function lookupUniverse(){
+  const universeId=document.getElementById("jUid").value.trim().toUpperCase();
   const joinCode=document.getElementById("jCode").value.trim().toUpperCase();
   busy(true);
-  const r=await api("gameMeta",{gameId,joinCode});
+  const r=await api("universeMeta",{universeId,joinCode});
   busy(false);
   const area=document.getElementById("joinArea");
   if(!r.ok){area.innerHTML=`<div class="warn">${r.error}</div>`;return;}
-  area.innerHTML=`
-    <p class="small" style="margin:10px 0 6px"><b>${r.name}</b> · Quarter ${r.quarter} of ${r.cfg.quarters}</p>
-    ${r.teams.map(t=>`
-      <div class="teamrow"><span class="tname"><span class="teamdot" style="background:${t.color}"></span>${t.name}
-        ${t.isBot?'<span class="pill bot">BOT</span>':t.registered?'<span class="pill ok">Registered</span>':'<span class="pill wait">Open slot</span>'}</span>
-        <span>
-          ${!t.isBot&&!t.registered?`<button class="btn ghost" onclick="showRegister('${gameId}','${joinCode}',${t.i},'${t.name.replace(/'/g,"")}')">Register this team</button>`:""}
-          ${!t.isBot&&t.registered?`<button class="btn ghost" onclick="showRejoin('${gameId}',${t.i},'${t.name.replace(/'/g,"")}')">Rejoin with team PIN</button>`:""}
-        </span></div>`).join("")}
-    <div id="regArea"></div>`;
+  area.innerHTML=`<p class="small" style="margin:10px 0 6px"><b>${r.name}</b> · Quarter ${r.quarter} of ${r.cfg.quarters}</p>
+    <div class="slotgrid">${r.teams.map(t=>`
+      <div class="slotcard"><span><span class="teamdot" style="background:${t.color}"></span><b>${t.name}</b>${t.isBot?' <span class="pill bot">BOT</span>':""}
+        <div class="memberchips">${(t.members||[]).map(n=>`<span class="mchip">${n}</span>`).join("")||'<span class="small muted">no members yet</span>'}</div></span>
+        ${!t.isBot?`<button class="btn tiny ghost" ${(t.members||[]).length>=6?"disabled":""} onclick="joinTeam('${universeId}','${joinCode}',${t.i})">${(t.members||[]).length>=6?"Full":"Join"}</button>`:""}
+      </div>`).join("")}</div>`;
 }
-function showRegister(gameId,joinCode,i,name){
-  document.getElementById("regArea").innerHTML=`
-    <div class="charterbox"><b style="font-family:var(--font-d)">Register ${name}</b>
-      <div class="setuprow" style="margin-top:8px">
-        <div><label class="f">Choose a team PIN (min 4 chars, share only within your team)</label><input id="rPin" type="password" style="width:160px"></div>
-        <div style="flex:1;min-width:200px"><label class="f">Member names (max 6)</label><input id="rPlayers" style="width:100%"></div>
-        <button class="btn" onclick="doRegister('${gameId}','${joinCode}',${i})">Register & enter</button>
-      </div><div class="warn" id="rErr"></div></div>`;
-}
-async function doRegister(gameId,joinCode,i){
+async function joinTeam(universeId,joinCode,teamIndex){
   busy(true);
-  const r=await api("joinTeam",{gameId,joinCode,teamIndex:i,teamPin:document.getElementById("rPin").value,players:document.getElementById("rPlayers").value});
+  const r=await api("joinTeam",withToken({universeId,joinCode,teamIndex}));
   busy(false);
-  if(!r.ok){document.getElementById("rErr").textContent=r.error;return;}
-  SESSION={gameId,role:"team",teamIndex:i,pin:document.getElementById("rPin").value};saveSession();
-  refreshTeam();
+  if(!r.ok){alert(r.error);return;}
+  openUniverse(universeId);
 }
-function showRejoin(gameId,i,name){
-  document.getElementById("regArea").innerHTML=`
-    <div class="charterbox"><b style="font-family:var(--font-d)">Rejoin ${name}</b>
-      <div class="setuprow" style="margin-top:8px">
-        <div><label class="f">Team PIN</label><input id="rjPin" type="password" style="width:160px"></div>
-        <button class="btn" onclick="doRejoin('${gameId}',${i})">Enter</button>
-      </div><div class="warn" id="rjErr"></div></div>`;
-}
-async function doRejoin(gameId,i){
-  const pin=document.getElementById("rjPin").value;
+async function openUniverse(universeId){
+  SESSION.universeId=universeId;saveSession();
   busy(true);
-  const r=await api("getGame",{gameId,role:"team",teamIndex:i,pin});
+  const r=await api("getGame",withToken({universeId}));
   busy(false);
-  if(!r.ok){document.getElementById("rjErr").textContent=r.error;return;}
-  SESSION={gameId,role:"team",teamIndex:i,pin};saveSession();
-  onTeamData(r);
+  if(!r.ok){alert(r.error);renderDashboard();return;}
+  if(r.role==="instructor")onInstructorData(r);
+  else onTeamData(r);
 }
 
+/* ---------- Create universe ---------- */
 function renderCreate(){
-  stopPoll();setBadge("New game");
+  stopPoll();setBadge("New universe");
   let rows="";
-  for(let i=0;i<6;i++){
+  for(let i=0;i<10;i++){
     rows+=`<div class="setuprow">
       <span class="teamdot" style="background:${TEAM_COLORS[i]}"></span>
       <input id="tn${i}" placeholder="Team ${i+1} name (blank = skip)" style="width:190px">
@@ -524,21 +657,18 @@ function renderCreate(){
     </div>`;
   }
   root.innerHTML=`
-  <div class="panel"><div class="panel-hd"><h2>Create a new league</h2><span class="tag">2 to 6 firms · student teams register themselves with the join code</span></div>
+  <div class="panel"><div class="panel-hd"><h2>Create a new universe</h2><span class="tag">up to 10 firms, up to 6 people each · students self-register with the join code</span></div>
     <div class="panel-bd">
-      <div class="setuprow">
-        <div><label class="f">Game name</label><input id="gName" value="EV Venture League" style="width:220px"></div>
-        <div><label class="f">Instructor PIN</label><input id="gPin" type="password" style="width:130px" placeholder="min 4 chars"></div>
-      </div>
+      <div class="setuprow"><div><label class="f">Universe name</label><input id="gName" value="EV Venture League" style="width:280px"></div></div>
       ${rows}
       <div class="setuprow" style="margin-top:12px">
         <div><label class="f">Quarters</label><select id="nq"><option>8</option><option selected>12</option><option>16</option><option>20</option><option>40</option></select></div>
-        <div><label class="f">Market size / quarter (units)</label><input id="tam" type="number" value="12000" style="width:110px"></div>
+        <div><label class="f">Market size / quarter (units)</label><input id="tam" type="number" value="20000" style="width:110px"></div>
         <div><label class="f">VC round in quarter</label><select id="vcq"><option>4</option><option selected>5</option><option>6</option><option>7</option><option>8</option></select></div>
       </div>
-      <p class="small muted" style="margin:8px 0 14px">Each firm starts with Rs. 25 Cr of founders' capital (Rs. 19 Cr cash plus a plant worth Rs. 6 Cr, 2,500 units/quarter), one launched model, 4 experience centres, 20 sales staff, and 5% awareness in every segment. Performance is judged on an ASCM-style balanced scorecard. In Quarter 1 each firm writes its vision and mission and declares target segments.</p>
-      <button class="btn big" onclick="doCreate()">Create game</button>
-      <button class="btn ghost" onclick="renderLanding()">Back</button>
+      <p class="small muted" style="margin:8px 0 14px">For a full class of ~60, use up to 10 human teams of up to 6 and a market size around 20,000-30,000 units/quarter so every firm has room to find a segment. Each firm starts with Rs. 25 Cr of founders' capital, one launched model, 4 experience centres, 20 sales staff, and 5% awareness in every segment. In Quarter 1 each firm writes its vision and mission and declares target segments. Performance is judged on an ASCM-style balanced scorecard.</p>
+      <button class="btn big" onclick="doCreate()">Create universe</button>
+      <button class="btn ghost" onclick="renderDashboard()">Back</button>
       <div class="warn" id="cErr"></div>
       <div id="busyBar" class="agenda" style="display:none;margin-top:12px"></div>
     </div>
@@ -546,44 +676,33 @@ function renderCreate(){
 }
 async function doCreate(){
   const teams=[];
-  for(let i=0;i<6;i++){
+  for(let i=0;i<10;i++){
     const nm=document.getElementById("tn"+i).value.trim();
     if(!nm)continue;
     teams.push({name:nm,arch:document.getElementById("ta"+i).value,isBot:document.getElementById("tb"+i).checked});
   }
-  busy(true,"Creating the league on the server...");
-  const r=await api("createGame",{name:document.getElementById("gName").value,instructorPin:document.getElementById("gPin").value,
-    quarters:+document.getElementById("nq").value,tam:+document.getElementById("tam").value,vcQuarter:+document.getElementById("vcq").value,teams});
+  busy(true,"Creating the universe on the server...");
+  const r=await api("createUniverse",withToken({name:document.getElementById("gName").value,
+    quarters:+document.getElementById("nq").value,tam:+document.getElementById("tam").value,vcQuarter:+document.getElementById("vcq").value,teams}));
   busy(false);
   if(!r.ok){document.getElementById("cErr").textContent=r.error;return;}
-  SESSION={gameId:r.gameId,role:"instructor",pin:document.getElementById("gPin").value};saveSession();
   root.innerHTML=`
-  <div class="panel"><div class="panel-hd"><h2>League created</h2></div><div class="panel-bd" style="text-align:center">
-    <p>Share these with the class. Teams go to this same website and register themselves.</p>
+  <div class="panel"><div class="panel-hd"><h2>Universe created</h2></div><div class="panel-bd" style="text-align:center">
+    <p>Share these with the class. Everyone signs up (or logs in) at this same website, then joins with these two codes.</p>
     <div style="display:flex;gap:24px;justify-content:center;margin:18px 0;flex-wrap:wrap">
-      <div class="kpi" style="padding:16px 26px"><div class="k-l">Game ID</div><div class="k-v" style="font-size:32px;letter-spacing:.1em">${r.gameId}</div></div>
+      <div class="kpi" style="padding:16px 26px"><div class="k-l">Universe ID</div><div class="k-v" style="font-size:32px;letter-spacing:.1em">${r.universeId}</div></div>
       <div class="kpi" style="padding:16px 26px"><div class="k-l">Join code</div><div class="k-v" style="font-size:32px;letter-spacing:.1em">${r.joinCode}</div></div>
     </div>
-    <button class="btn big" onclick="refreshInstructor()">Open instructor console</button>
+    <button class="btn big" onclick="openUniverse('${r.universeId}')">Open instructor console</button>
   </div></div>`;
-}
-async function openInstructor(){
-  const gameId=document.getElementById("iGid").value.trim().toUpperCase();
-  const pin=document.getElementById("iPin").value;
-  busy(true);
-  const r=await api("getGame",{gameId,role:"instructor",pin});
-  busy(false);
-  if(!r.ok){document.getElementById("iErr").textContent=r.error;return;}
-  SESSION={gameId,role:"instructor",pin};saveSession();
-  onInstructorData(r);
 }
 
 /* ============================================================
    TEAM CONSOLE
    ============================================================ */
 async function refreshTeam(){
-  const r=await api("getGame",{gameId:SESSION.gameId,role:"team",teamIndex:SESSION.teamIndex,pin:SESSION.pin});
-  if(!r.ok){alert(r.error);renderLanding();return;}
+  const r=await api("getGame",withToken({universeId:SESSION.universeId}));
+  if(!r.ok){alert(r.error);renderDashboard();return;}
   onTeamData(r);
 }
 function onTeamData(r){
@@ -607,6 +726,10 @@ function agendaFor(q,vcq){
 function lockStrip(){
   return (G.teamsMeta||[]).map(m=>`<span class="pill ${m.locked?"ok":m.isBot?"bot":"wait"}" style="margin-right:5px"><span class="teamdot" style="background:${m.color};width:8px;height:8px"></span>${m.name}${m.isBot?" · bot":m.locked?" · locked":" · deciding"}</span>`).join("");
 }
+function memberStrip(t){
+  const you=SESSION.user.userId;
+  return `<div class="memberchips">${(t.members||[]).map(m=>`<span class="mchip ${m.userId===you?'you':''}">${m.name}</span>`).join("")}</div>`;
+}
 
 function renderTeamDecision(){
   stopPoll();setBadge();
@@ -621,8 +744,9 @@ function renderTeamDecision(){
     <div class="charterbox">
       <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;align-items:baseline">
         <b style="font-family:var(--font-d)">Company charter</b>
-        <span class="small muted">${G.quarter===1?"Required before locking Quarter 1. Your target segments feed the balanced scorecard.":"Set in Quarter 1 · target segments feed the balanced scorecard"}</span>
+        <span class="small muted">${G.quarter===1?"Required before locking Quarter 1.":"Set in Quarter 1"} · target segments feed the balanced scorecard</span>
       </div>
+      ${memberStrip(t)}
       <div class="grid2" style="margin-top:8px">
         <div><label class="f">Vision (where we are going)</label><textarea id="chVision" ${G.quarter>1?"readonly":""}>${t.vision||""}</textarea></div>
         <div><label class="f">Mission (what we do, for whom, how)</label><textarea id="chMission" ${G.quarter>1?"readonly":""}>${t.mission||""}</textarea></div>
@@ -657,14 +781,22 @@ function renderTeamDecision(){
     }
     const warrPerUnit=Math.round(2600-1800*reliab);
     return `<div class="modelcard ${editing?"editing":""}">
-      <div class="mc-hd">
-        <span class="nm">${m.name}${m.inv>0?` <span class="pill wait">${m.inv.toLocaleString("en-IN")} in stock</span>`:""}${m.isNew?' <span class="pill warnp">NEW · Rs. 50 L dev</span>':""}</span>
-        <span class="mono small">Unit cost <b>${fmtRs(cost)}</b></span>
-        <span>Price Rs. <input type="number" value="${m.price}" min="55000" max="200000" step="500" style="width:110px" onchange="setPrice(${mi},this.value)"></span>
-        <button class="btn ghost" onclick="ui.editModel=${editing?"null":mi};renderTeamDecision()">${editing?"Close editor":"Edit BOM"}</button>
+      <div class="bikepreview">
+        <div class="svgwrap">${svgScooter(m,t.color,180)}</div>
+        <div style="flex:1;min-width:180px">
+          <div class="mc-hd">
+            <span class="nm">${m.name}${m.inv>0?` <span class="pill wait">${m.inv.toLocaleString("en-IN")} in stock</span>`:""}${m.isNew?' <span class="pill warnp">NEW · Rs. 50 L dev</span>':""}</span>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:6px">
+            <button class="btn tiny ghost" onclick="renameModel(${mi})">Rename</button>
+            <span class="mono small">Unit cost <b>${fmtRs(cost)}</b></span>
+            <span>Price Rs. <input type="number" value="${m.price}" min="55000" max="200000" step="500" style="width:105px" onchange="setPrice(${mi},this.value)"></span>
+            <button class="btn ghost" onclick="ui.editModel=${editing?"null":mi};renderTeamDecision()">${editing?"Close editor":"Edit BOM"}</button>
+          </div>
+          <div class="qstrip" style="margin-top:8px">${qchips}</div>
+          <div class="small ${m.price-cost-warrPerUnit<0?'warn':'muted'}" style="margin-top:6px">Contribution/unit: ${fmtRs(m.price-cost-warrPerUnit)} (after Rs. ${warrPerUnit.toLocaleString("en-IN")} warranty provision at reliability ${reliab.toFixed(2)})</div>
+        </div>
       </div>
-      <div class="qstrip">${qchips}</div>
-      <div class="small ${m.price-cost-warrPerUnit<0?'warn':'muted'}" style="margin-top:6px">Contribution/unit: ${fmtRs(m.price-cost-warrPerUnit)} (after Rs. ${warrPerUnit.toLocaleString("en-IN")} warranty provision at reliability ${reliab.toFixed(2)})</div>
       ${editor}
     </div>`;
   }).join("");
@@ -706,13 +838,15 @@ function renderTeamDecision(){
         <select id="licBuyer">${rivals.map(x=>`<option value="${x.i}">${x.name}${x.isBot?" (bot)":""}</option>`).join("")}</select></div>
       <div><label class="f">Fee (Rs. L, min 1)</label><input id="licFee" type="number" min="1" step="5" value="80" style="width:90px"></div>
       <button class="btn ghost" onclick="makeOffer()">Send offer</button>
-      <span class="small muted">Benchmark: about half the standard development cost. You write the contract; the buyer must accept during this quarter.</span>
+      <span class="small muted">Benchmark: about half the standard development cost. You write the contract; the buyer must accept this quarter.</span>
     </div>`:`<p class="small muted">Develop a technology first; then you can license it to rivals and recoup your investment.</p>`;
+
+  const storeCount=t.centres+(t.dec.newCentres||0);
 
   root.innerHTML=`
   <div class="panel"><div class="panel-hd">
     <h2><span class="teamdot" style="background:${t.color}"></span>${t.name} · Quarter ${G.quarter} decisions</h2>
-    <span><button class="btn ghost" onclick="renderSurvey()">Market needs survey</button> <span class="tag">Cash ${fmtL(t.cash)} L · Rep ${t.rep.toFixed(2)} · Equity Rs. ${fmtL(equityOf(t))} L</span></span></div>
+    <span><button class="btn ghost" onclick="renderCompare()">Compare all firms</button> <button class="btn ghost" onclick="renderSurvey()">Market survey</button> <span class="tag">Cash ${fmtL(t.cash)} L · Rep ${t.rep.toFixed(2)} · Equity Rs. ${fmtL(equityOf(t))} L</span></span></div>
     <div class="panel-bd">
       <div class="notice" id="tNotice"></div>
       <div class="agenda">${agendaFor(G.quarter,G.cfg.vcQuarter)}</div>
@@ -721,7 +855,7 @@ function renderTeamDecision(){
 
       <h2 class="sect">Models (${t.models.length}/3)</h2>
       ${cards}
-      ${t.models.length<3?`<button class="btn ghost" onclick="addModel()">+ Launch new model (Rs. 50 L development)</button>`:""}
+      ${t.models.length<3?`<button class="btn ghost" onclick="addModel()">+ Launch new model (Rs. 50 L development) · you choose the name</button>`:""}
 
       <h2 class="sect">R&D pipeline & technology licensing <span class="small muted" style="font-weight:400">· max 2 projects in the lab · crash costs more, standard saves ~30%</span></h2>
       ${techRows}
@@ -747,39 +881,47 @@ function renderTeamDecision(){
       ${allocSum!==100?`<div class="warn" style="margin-top:6px">Allocation must sum to 100 (now ${allocSum}).</div>`:""}
 
       <h2 class="sect">Sales network & service reach</h2>
-      <div class="setuprow">
-        <div><label class="f">Experience centres (now ${t.centres})</label><input type="number" min="0" max="2" step="1" value="${t.dec.newCentres||0}" style="width:80px" onchange="t_set('newCentres',this.value,0,2)"> <span class="small muted">new this qtr · Rs. ${CENTRE.open} L each + Rs. ${CENTRE.opex} L/qtr running</span></div>
-        <div><label class="f">Sales staff (now ${t.staff})</label><input type="number" min="${-t.staff}" max="60" step="1" value="${t.dec.hire||0}" style="width:80px" onchange="t_set('hire',this.value,${-t.staff},60)"> <span class="small muted">hire (+) or release (-) · Rs. ${HR.salesCost} L/head/qtr at benchmark pay · max 8 per centre</span></div>
+      <div class="bikepreview">
+        <div class="svgwrap storerow">${svgStoreRow(storeCount,t.color)}</div>
+        <div style="flex:1;min-width:220px">
+          <div class="setuprow">
+            <div><label class="f">Experience centres (now ${t.centres})</label><input type="number" min="0" max="2" step="1" value="${t.dec.newCentres||0}" style="width:80px" onchange="t_set('newCentres',this.value,0,2)"> <span class="small muted">new this qtr · Rs. ${CENTRE.open} L each + Rs. ${CENTRE.opex} L/qtr running</span></div>
+            <div><label class="f">Sales staff (now ${t.staff})</label><input type="number" min="${-t.staff}" max="60" step="1" value="${t.dec.hire||0}" style="width:80px" onchange="t_set('hire',this.value,${-t.staff},60)"> <span class="small muted">hire (+) or release (-) · Rs. ${HR.salesCost} L/head/qtr at benchmark pay · max 8 per centre</span></div>
+          </div>
+          <div class="small muted">Projected distribution & service reach: <b class="mono">${(reach*100).toFixed(0)}%</b> of interested buyers can conveniently see, buy and service your scooters.</div>
+        </div>
       </div>
-      <div class="small muted">Projected distribution & service reach: <b class="mono">${(reach*100).toFixed(0)}%</b> of interested buyers can conveniently see, buy and service your scooters. Reach gates demand and lifts satisfaction.</div>
 
       <h2 class="sect">Human resources · compensation packages</h2>
       <div class="setuprow">
         <div><label class="f">Sales staff package (% of industry benchmark)</label><input type="number" min="${HR.min}" max="${HR.max}" step="1" value="${t.hr.sales}" style="width:90px" onchange="t_setHR('sales',this.value)"></div>
         <div><label class="f">Plant workers package (% of benchmark)</label><input type="number" min="${HR.min}" max="${HR.max}" step="1" value="${t.hr.plant}" style="width:90px" onchange="t_setHR('plant',this.value)"></div>
-        <div class="small muted">Pay relative to rivals drives productivity: projected sales effectiveness x${hrM.sales.toFixed(2)}, plant output x${hrM.plant.toFixed(2)}. The table shows last quarter's public industry packages.</div>
+        <div class="small muted">Pay relative to rivals drives productivity: projected sales effectiveness x${hrM.sales.toFixed(2)}, plant output x${hrM.plant.toFixed(2)}.</div>
       </div>
-      <table style="max-width:520px"><tr><th>Firm</th><th>Sales pkg</th><th>Plant pkg</th></tr>
-        ${G.teamsMeta.map(x=>`<tr><td><span class="teamdot" style="background:${x.color}"></span>${x.i===t.i?"<b>"+x.name+" (you)</b>":x.name}</td><td>${x.i===t.i?t.hr.sales:x.hr.sales}</td><td>${x.i===t.i?t.hr.plant:x.hr.plant}</td></tr>`).join("")}</table>
 
       <h2 class="sect">Production, capacity & quality</h2>
-      <div class="setuprow">${t.models.map(m=>`
-        <div><label class="f" style="text-transform:none">${m.name}${m.inv>0?` <span class="muted">+${m.inv} stock</span>`:""}</label>
-        <input type="number" min="0" max="${t.capacity}" step="50" value="${t.dec.prod[m.id]||0}" style="width:110px" onchange="t_setProd('${m.id}',this.value)"></div>`).join("")}
-        <div class="small ${prodSum>t.capacity?"warn":"muted"}" style="align-self:flex-end">Scheduled ${prodSum.toLocaleString("en-IN")} / ${t.capacity.toLocaleString("en-IN")} capacity · ${(t.models.length>1?"changeover and ":"")}plant productivity applies to output</div>
+      <div class="bikepreview">
+        <div class="svgwrap">${svgFactory(t.dec.prod&&t.capacity?Math.min(1,Object.values(t.dec.prod).reduce((a,b)=>a+ (+b||0),0)/Math.max(1,t.capacity)):0,t.color)}</div>
+        <div style="flex:1;min-width:220px">
+          <div class="setuprow">${t.models.map(m=>`
+            <div><label class="f" style="text-transform:none">${m.name}${m.inv>0?` <span class="muted">+${m.inv} stock</span>`:""}</label>
+            <input type="number" min="0" max="${t.capacity}" step="50" value="${t.dec.prod[m.id]||0}" style="width:110px" onchange="t_setProd('${m.id}',this.value)"></div>`).join("")}
+            <div class="small ${prodSum>t.capacity?"warn":"muted"}" style="align-self:flex-end">Scheduled ${prodSum.toLocaleString("en-IN")} / ${t.capacity.toLocaleString("en-IN")} capacity</div>
+          </div>
+        </div>
       </div>
       <div class="setuprow">
-        <div><label class="f">Expand capacity (blocks of ${CAP_BLOCK.units})</label><input type="number" min="0" max="4" step="1" value="${t.dec.expBlocks||0}" style="width:80px" onchange="t_set('expBlocks',this.value,0,4)"> <span class="small muted">Rs. ${CAP_BLOCK.cost} L capex per block · online next quarter · depreciates ${(DEP_RATE*100).toFixed(0)}%/qtr</span></div>
-        <div><label class="f">Quality improvement spend (Rs. L)</label><input type="number" min="0" max="120" step="5" value="${t.dec.quality||0}" style="width:90px" onchange="t_set('quality',this.value,0,120)"> <span class="small muted">reliability now ${reliab.toFixed(2)} · cuts warranty cost/unit and lifts perceived reliability</span></div>
+        <div><label class="f">Expand capacity (blocks of ${CAP_BLOCK.units})</label><input type="number" min="0" max="4" step="1" value="${t.dec.expBlocks||0}" style="width:80px" onchange="t_set('expBlocks',this.value,0,4)"> <span class="small muted">Rs. ${CAP_BLOCK.cost} L capex per block · online next quarter</span></div>
+        <div><label class="f">Quality improvement spend (Rs. L)</label><input type="number" min="0" max="120" step="5" value="${t.dec.quality||0}" style="width:90px" onchange="t_set('quality',this.value,0,120)"> <span class="small muted">reliability now ${reliab.toFixed(2)}</span></div>
       </div>
       <div class="small muted">Unsold units carry to next quarter at Rs. ${(HOLD_COST*1e5).toLocaleString("en-IN")}/unit holding cost, and excess inventory hurts your asset-management score.</div>
 
       <h2 class="sect">Finance</h2>
       <div class="setuprow">
-        <div><label class="f">Bank credit line outstanding (Rs. L)</label><input type="number" min="0" max="${Math.floor(bankLimit(t))}" step="25" value="${t.dec.bankTarget||t.debt.bank}" style="width:110px" onchange="t_set('bankTarget',this.value,0,${Math.floor(bankLimit(t))})"> <span class="small muted">limit Rs. ${Math.floor(bankLimit(t)).toLocaleString("en-IN")} L (1.5x equity less other debt) · ~3-5%/qtr, rises with utilization</span></div>
-        <div><label class="f">Issue 5-year bond (Rs. L)</label><input type="number" min="0" max="${Math.floor(ltLimit(t))}" step="50" ${t.debt.lt>0?"disabled":""} value="${t.dec.ltIssue||0}" style="width:110px" onchange="t_set('ltIssue',this.value,0,${Math.floor(ltLimit(t))})"> <span class="small muted">${t.debt.lt>0?`bond outstanding Rs. ${t.debt.lt.toFixed(0)} L · ${t.debt.ltLeft} qtrs to maturity`:"4.5%/qtr fixed · principal due after 20 quarters · limit 2x equity"}</span></div>
+        <div><label class="f">Bank credit line outstanding (Rs. L)</label><input type="number" min="0" max="${Math.floor(bankLimit(t))}" step="25" value="${t.dec.bankTarget||t.debt.bank}" style="width:110px" onchange="t_set('bankTarget',this.value,0,${Math.floor(bankLimit(t))})"> <span class="small muted">limit Rs. ${Math.floor(bankLimit(t)).toLocaleString("en-IN")} L</span></div>
+        <div><label class="f">Issue 5-year bond (Rs. L)</label><input type="number" min="0" max="${Math.floor(ltLimit(t))}" step="50" ${t.debt.lt>0?"disabled":""} value="${t.dec.ltIssue||0}" style="width:110px" onchange="t_set('ltIssue',this.value,0,${Math.floor(ltLimit(t))})"> <span class="small muted">${t.debt.lt>0?`bond outstanding Rs. ${t.debt.lt.toFixed(0)} L · ${t.debt.ltLeft} qtrs to maturity`:"4.5%/qtr fixed · principal due after 20 quarters"}</span></div>
       </div>
-      <div class="small muted">Debt now: bank Rs. ${t.debt.bank.toFixed(0)} L · bond Rs. ${t.debt.lt.toFixed(0)} L · emergency Rs. ${t.debt.shark.toFixed(0)} L. Ending a quarter with negative cash triggers an emergency loan at up to 25%/qtr plus equity dilution.</div>
+      <div class="small muted">Debt now: bank Rs. ${t.debt.bank.toFixed(0)} L · bond Rs. ${t.debt.lt.toFixed(0)} L · emergency Rs. ${t.debt.shark.toFixed(0)} L.</div>
 
       <h2 class="sect">Market research</h2>
       <div class="setuprow">
@@ -790,8 +932,7 @@ function renderTeamDecision(){
       ${G.quarter===G.cfg.vcQuarter?`
       <h2 class="sect">VC Room · this quarter only</h2>
       <div class="setuprow" style="background:var(--green-tint);border-radius:8px;padding:12px">
-        <div class="small">Indicative valuation of ${t.name}: <b class="mono">Rs. ${valuationOf(t).toLocaleString("en-IN")} L</b><br>
-        <span class="muted">1.2 x annualized trailing revenue x reputation, lifted by your cumulative balanced scorecard. Offer at least ask/valuation in equity or expect partial funding.</span></div>
+        <div class="small">Indicative valuation of ${t.name}: <b class="mono">Rs. ${valuationOf(t).toLocaleString("en-IN")} L</b></div>
         <div><label class="f">Ask (Rs. L)</label><input type="number" min="0" max="2000" step="50" value="${t.dec.vc?t.dec.vc.ask:0}" style="width:100px" onchange="t_setVC('ask',this.value)"></div>
         <div><label class="f">Equity offered (%)</label><input type="number" min="0" max="60" step="0.5" value="${t.dec.vc?t.dec.vc.equity:0}" style="width:90px" onchange="t_setVC('equity',this.value)"></div>
       </div>`:""}
@@ -799,23 +940,23 @@ function renderTeamDecision(){
       <div style="margin-top:20px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         <button class="btn big" id="lockBtn" onclick="submitLock()">Lock in decisions</button>
         <button class="btn ghost" onclick="refreshTeam()">Discard edits & reload</button>
+        <button class="btn ghost" onclick="renderDashboard()">Dashboard</button>
         <button class="btn ghost" onclick="logout()">Sign out</button>
       </div>
       <div id="auditArea"></div>
       <div id="busyBar" class="agenda" style="display:none;margin-top:12px"></div>
     </div>
   </div>`;
-  // light poll: refresh lock strip and incoming offers without touching the form
   startPoll(async()=>{
     try{
-      const r=await api("getGame",{gameId:SESSION.gameId,role:"team",teamIndex:SESSION.teamIndex,pin:SESSION.pin});
+      const r=await api("getGame",withToken({universeId:SESSION.universeId}));
       if(!r.ok)return;
       const hadOffers=(G.offersIn||[]).length;
       G.teamsMeta=r.teamsMeta;G.offersIn=r.offersIn;G.offersOut=r.offersOut;G.phase=r.phase;G.quarter=r.quarter;
       const strip=document.getElementById("liveStrip");
       if(strip)strip.innerHTML=lockStrip();
       if(r.phase!=="decisions"){onTeamData(r);return;}
-      if((r.offersIn||[]).length!==hadOffers)tNote("A licence offer just arrived. Scroll to the R&D section to respond, then lock in again if needed.");
+      if((r.offersIn||[]).length!==hadOffers)tNote("A licence offer just arrived. Scroll to the R&D section to respond.");
     }catch(e){}
   },10000);
 }
@@ -828,6 +969,12 @@ function readCharter(){
 function setCfg(mi,cat,val){readCharter();const m=MY.models[mi];m.cfg[cat]=val;const msgs=enforceModelRules(m);renderTeamDecision();if(msgs.length)tNote(msgs.join(" "));}
 function toggleAdd(mi,id){readCharter();const m=MY.models[mi];m.add[id]=!m.add[id];const msgs=enforceModelRules(m);renderTeamDecision();if(msgs.length)tNote(msgs.join(" "));}
 function setPrice(mi,v){readCharter();MY.models[mi].price=clamp(Math.round(+v/500)*500,55000,200000);renderTeamDecision();}
+function renameModel(mi){
+  readCharter();
+  const cur=MY.models[mi].name;
+  const nm=prompt("Name this scooter (shown to the market and rivals):",cur);
+  if(nm&&nm.trim()){MY.models[mi].name=nm.trim().slice(0,30);renderTeamDecision();}
+}
 function t_set(f,v,a,b){readCharter();MY.dec[f]=clamp(Math.round(+v||0),a,b);renderTeamDecision();}
 function t_setHR(k,v){readCharter();MY.hr[k]=clamp(Math.round(+v||100),HR.min,HR.max);renderTeamDecision();}
 function t_setAlloc(sid,v){readCharter();MY.dec.alloc[sid]=clamp(Math.round(+v||0),0,100);renderTeamDecision();}
@@ -842,7 +989,9 @@ function toggleClaim(k){readCharter();MY.dec.claims=MY.dec.claims||[];
 function addModel(){
   readCharter();
   if(MY.models.length>=3)return;
-  const m={id:"M"+Math.random().toString(36).slice(2,7),name:"New Model "+(MY.models.length+1),
+  const nm=prompt("Name your new scooter:","Model "+(MY.models.length+1));
+  if(nm===null)return;
+  const m={id:"M"+Math.random().toString(36).slice(2,7),name:(nm.trim()||"New Model").slice(0,30),
     cfg:{...ARCHETYPES.commuter.cfg},add:{},price:110000,inv:0,isNew:true};
   ADDONS.forEach(a=>m.add[a.id]=a.id==="boot");
   MY.models.push(m);MY.dec.prod[m.id]=0;
@@ -866,21 +1015,21 @@ async function makeOffer(){
   const buyerI=+document.getElementById("licBuyer").value;
   const fee=Math.max(1,Math.round(+document.getElementById("licFee").value||0));
   busy(true,"Sending offer...");
-  const r=await api("offerLicence",{gameId:SESSION.gameId,teamIndex:SESSION.teamIndex,pin:SESSION.pin,techId,buyerI,fee});
+  const r=await api("offerLicence",withToken({universeId:SESSION.universeId,techId,buyerI,fee}));
   busy(false);
   if(!r.ok){tNote(r.error);return;}
-  const g=await api("getGame",{gameId:SESSION.gameId,role:"team",teamIndex:SESSION.teamIndex,pin:SESSION.pin});
+  const g=await api("getGame",withToken({universeId:SESSION.universeId}));
   if(g.ok){G.offersIn=g.offersIn;G.offersOut=g.offersOut;}
   renderTeamDecision();tNote(r.note);
 }
 async function respondLicence(id,accept){
   busy(true);
-  const r=await api("respondLicence",{gameId:SESSION.gameId,teamIndex:SESSION.teamIndex,pin:SESSION.pin,contractId:id,accept});
+  const r=await api("respondLicence",withToken({universeId:SESSION.universeId,contractId:id,accept}));
   busy(false);
   if(!r.ok){tNote(r.error);return;}
-  const g=await api("getGame",{gameId:SESSION.gameId,role:"team",teamIndex:SESSION.teamIndex,pin:SESSION.pin});
+  const g=await api("getGame",withToken({universeId:SESSION.universeId}));
   if(g.ok){G.offersIn=g.offersIn;G.offersOut=g.offersOut;}
-  if(document.getElementById("licTech")||document.getElementById("tNotice")){renderTeamDecision();tNote(accept?"Licence accepted. The fee is charged and the technology arrives at quarter end (usable from next quarter). Non-revocable.":"Offer rejected.");}
+  if(document.getElementById("licTech")||document.getElementById("tNotice")){renderTeamDecision();tNote(accept?"Licence accepted. Non-revocable; the technology arrives next quarter.":"Offer rejected.");}
   else renderTeamWaiting();
 }
 async function submitLock(){
@@ -893,7 +1042,7 @@ async function submitLock(){
       bankTarget:MY.dec.bankTarget,ltIssue:MY.dec.ltIssue,buyIntel:MY.dec.buyIntel,buyClinic:MY.dec.buyClinic,
       vc:MY.dec.vc,rndStarts:PENDING.rndStarts}};
   busy(true,"Submitting to the auditor...");
-  const r=await api("submitDecisions",{gameId:SESSION.gameId,teamIndex:SESSION.teamIndex,pin:SESSION.pin,payload});
+  const r=await api("submitDecisions",withToken({universeId:SESSION.universeId,payload}));
   busy(false);
   const box=document.getElementById("auditArea");
   if(!r.ok){
@@ -904,8 +1053,6 @@ async function submitLock(){
   }
   refreshTeam();
 }
-function logout(){stopPoll();SESSION={};saveSession();renderLanding();}
-
 function renderTeamWaiting(){
   setBadge();
   const t=G.myTeam;
@@ -916,19 +1063,89 @@ function renderTeamWaiting(){
       <button class="btn tiny ghost" onclick="respondLicence(${c.id},false)">Reject</button></div></div>`;
   }).join("");
   root.innerHTML=`
-  <div class="panel"><div class="panel-hd"><h2><span class="teamdot" style="background:${t.color}"></span>${t.name} · Quarter ${G.quarter}</h2><span class="tag">decisions locked</span></div>
+  <div class="panel"><div class="panel-hd"><h2><span class="teamdot" style="background:${t.color}"></span>${t.name} · Quarter ${G.quarter}</h2><span class="tag">decisions locked${t.dec.lockedBy?" by "+t.dec.lockedBy:""}</span></div>
     <div class="panel-bd" style="text-align:center">
       <div class="notice" id="tNotice"></div>
       <p style="font-family:var(--font-d);font-size:18px;margin:18px 0 6px">Decisions locked in. Waiting for the other firms and the instructor.</p>
+      ${memberStrip(t)}
       <div class="small" style="margin:10px 0">${lockStrip()}</div>
       ${offersInBlk?`<div style="text-align:left;max-width:560px;margin:14px auto"><label class="f">Licence offers you can still act on this quarter</label>${offersInBlk}</div>`:""}
       <p class="small muted">This screen updates automatically. Ask the instructor to unlock you if you need to change something.</p>
-      <button class="btn ghost" onclick="renderSurvey()">Market needs survey</button>
+      <button class="btn ghost" onclick="renderCompare()">Compare all firms</button>
+      <button class="btn ghost" onclick="renderSurvey()">Market survey</button>
+      <button class="btn ghost" onclick="renderDashboard()">Dashboard</button>
       <button class="btn ghost" onclick="logout()">Sign out</button>
       <div id="busyBar" class="agenda" style="display:none;margin-top:12px"></div>
     </div>
   </div>`;
   startPoll(refreshTeam,7000);
+}
+
+/* ============================================================
+   DEEP MARKET COMPARISON · "microscopic" cross-firm view
+   ============================================================ */
+function marketIntelOfState(st){
+  return st.teams.map(t=>{
+    const r=t.hist.length?t.hist[t.hist.length-1]:null;
+    return {i:t.i,name:t.name,color:t.color,isBot:t.isBot,vision:t.vision,mission:t.mission,prim:t.prim,sec:t.sec,
+      ad:t.dec.ad,claims:t.dec.claims||[],alloc:t.dec.alloc,centres:t.centres,staff:t.staff,hr:t.hr,
+      techs:t.techs,rep:Math.round(t.rep*100)/100,
+      models:t.models.map(m=>({name:m.name,cfg:m.cfg,add:m.add,price:m.price})),
+      units:r?r.units:0,share:r?r.share:0};
+  });
+}
+function specRow(label,fn,market){
+  return `<tr><td>${label}</td>${market.map(x=>`<td>${fn(x)}</td>`).join("")}</tr>`;
+}
+function marketCompareHTML(market,myIdx){
+  const segName=id=>(SEGMENTS.find(s=>s.id===id)||{}).name||id;
+  const head=`<tr><th>Firm</th>${market.map(x=>`<th><span class="teamdot" style="background:${x.color}"></span>${x.name}${x.isBot?' <span class="pill bot">BOT</span>':""}</th>`).join("")}</tr>`;
+  const firmTbl=`<div class="cmp-table"><table>${head}
+    ${specRow("Primary segment",x=>segName(x.prim),market)}
+    ${specRow("Secondary segment",x=>segName(x.sec),market)}
+    ${specRow("Ad budget (Rs. L/qtr)",x=>x.ad,market)}
+    ${specRow("Campaign claims",x=>x.claims.map(k=>CLAIMS[k]).join(", ")||"-",market)}
+    ${specRow("Ad allocation",x=>SEGMENTS.map(s=>s.name.slice(0,3)+" "+(x.alloc[s.id]||0)+"%").join(" · "),market)}
+    ${specRow("Experience centres",x=>x.centres,market)}
+    ${specRow("Sales staff",x=>x.staff,market)}
+    ${specRow("Sales pkg (% benchmark)",x=>x.hr.sales,market)}
+    ${specRow("Plant pkg (% benchmark)",x=>x.hr.plant,market)}
+    ${specRow("Technologies",x=>x.techs.length?x.techs.map(id=>techById(id).name.split(" (")[0]).join(", "):"-",market)}
+    ${specRow("Reputation",x=>x.rep.toFixed(2),market)}
+    ${specRow("Units sold, last quarter",x=>x.units.toLocaleString("en-IN"),market)}
+    ${specRow("Market share, last quarter",x=>(x.share*100).toFixed(1)+"%",market)}
+  </table></div>`;
+  const maxModels=Math.max(...market.map(x=>x.models.length),1);
+  let modelBlk="";
+  for(let mi=0;mi<maxModels;mi++){
+    const rowsCats=Object.keys(CATALOG).map(cat=>specRow(CATALOG[cat].label,x=>{
+      const m=x.models[mi];return m?labelOf(cat,m.cfg[cat]):"-";
+    },market)).join("");
+    const addonRow=specRow("Add-ons",x=>{
+      const m=x.models[mi];if(!m)return "-";
+      const on=ADDONS.filter(a=>m.add[a.id]).map(a=>a.name);
+      return on.length?on.join(", "):"none";
+    },market);
+    modelBlk+=`<h3 class="sect" style="margin-top:18px">Model slot ${mi+1}</h3>
+      <div class="cmp-table"><table>
+        <tr><th>Firm</th>${market.map(x=>{const m=x.models[mi];return `<th>${m?m.name:'<span class="muted">—</span>'}</th>`;}).join("")}</tr>
+        ${specRow("Price",x=>{const m=x.models[mi];return m?fmtRs(m.price):"-";},market)}
+        ${rowsCats}
+        ${addonRow}
+      </table></div>`;
+  }
+  return `<p class="small muted">Prices, specs, campaigns, network, technologies and compensation packages are public — exactly what a rival firm's product and HR teams could observe about each other in the real industry. Costs, cash and profit stay private to each firm.</p>
+    ${firmTbl}${modelBlk}`;
+}
+function renderCompare(){
+  stopPoll();setBadge();
+  const market=G.market||marketIntelOfState(G.state);
+  root.innerHTML=`
+  <div class="panel"><div class="panel-hd"><h2>Compare all firms</h2><span class="tag">microscopic cross-firm view · updates live</span></div>
+    <div class="panel-bd">${marketCompareHTML(market)}
+      <div style="margin-top:16px"><button class="btn" onclick="${SESSION.role==='instructor'?'onInstructorData(G)':'(G.phase==="decisions"?renderTeamDecision():G.phase==="results"?renderTeamResults():renderFinal(G.leaderboard))'}">Back</button></div>
+    </div>
+  </div>`;
 }
 
 /* ---------- shared result renderers ---------- */
@@ -950,7 +1167,7 @@ function publicReportHTML(rep){
         <div>${segBars}</div>
         <div><table><tr><th>Team</th><th>Model</th><th>List price</th><th>Units sold</th></tr>
           ${rep.priceTable.map(p=>`<tr><td><span class="teamdot" style="background:${p.color}"></span>${p.team}</td><td style="text-align:left;font-family:var(--font-b)">${p.model}</td><td>${fmtRs(p.price)}</td><td>${p.units.toLocaleString("en-IN")}</td></tr>`).join("")}</table>
-          <p class="small muted" style="margin-top:8px">Prices, specs, compensation packages and executed licence deals are public. Budgets, costs and P&Ls stay private.</p>
+          <p class="small muted" style="margin-top:8px">Open "Compare all firms" for the full microscopic breakdown: specs, ads, stores, staff and pay across every rival.</p>
         </div>
       </div>`;
 }
@@ -995,7 +1212,7 @@ function privatePackHTML(t,r){
     <tr><td></td><td></td><td>Retained earnings</td><td class="${t.cumProfit<0?'v neg':''}">${fmtL(t.cumProfit)}</td></tr>
     <tr class="total"><td>Total</td><td>${fmtL(t.cash+r.invValue+t.ppe)}</td><td>Total</td><td>${fmtL(t.debt.bank+t.debt.lt+t.debt.shark+t.paidIn+t.cumProfit)}</td></tr></table>`;
   const ops=`<div class="kpis" style="margin-top:12px;grid-template-columns:repeat(4,1fr)">
-    <div class="kpi"><div class="k-l">Capacity utilization</div><div class="k-v">${(r.util*100).toFixed(0)}%</div></div>
+    <div class="gaugewrap"><div class="svgwrap">${svgGauge(r.util,t.color,"Utilization")}</div></div>
     <div class="kpi"><div class="k-l">Reliability</div><div class="k-v">${r.reliab.toFixed(2)}</div></div>
     <div class="kpi"><div class="k-l">Network reach</div><div class="k-v">${(r.reach*100).toFixed(0)}%</div></div>
     <div class="kpi"><div class="k-l">Ending inventory</div><div class="k-v" style="color:${r.endInv>r.produced*.3?'var(--amber)':'inherit'}">${r.endInv.toLocaleString("en-IN")}</div></div>
@@ -1009,7 +1226,8 @@ function privatePackHTML(t,r){
   const clinicBlk=r.clinic?`<label class="f" style="margin-top:14px">Customer clinic (purchased) · product/price judgment by segment, all models</label>
     <table><tr><th>Model</th>${SEGMENTS.map(s=>`<th>${s.name}</th>`).join("")}</tr>${
     r.clinic.map(x=>`<tr><td><span class="teamdot" style="background:${x.color}"></span>${x.model}</td>${SEGMENTS.map(s=>`<td>${x.cells[s.id]}</td>`).join("")}</tr>`).join("")}</table>`:"";
-  return `${charterLine}
+  const bikeRow=`<div class="bikepreview">${t.models.map(m=>`<div class="svgwrap">${svgScooter(m,t.color,140)}<div class="small muted" style="text-align:center;margin-top:4px">${m.name}</div></div>`).join("")}</div>`;
+  return `${charterLine}${bikeRow}
       <div class="kpis" style="margin:10px 0 12px;grid-template-columns:repeat(5,1fr)">
         <div class="kpi"><div class="k-l">Units sold</div><div class="k-v">${r.units.toLocaleString("en-IN")}</div></div>
         <div class="kpi"><div class="k-l">Lost sales</div><div class="k-v" style="color:${r.lost>0?'var(--red)':'inherit'}">${r.lost.toLocaleString("en-IN")}</div></div>
@@ -1041,7 +1259,9 @@ function renderTeamResults(){
     <div class="panel-bd">${privatePackHTML(t,r)}</div></div>
   <div style="display:flex;gap:10px;flex-wrap:wrap">
     <span class="pill wait" style="align-self:center">Waiting for the instructor to open Quarter ${G.quarter}...</span>
-    <button class="btn ghost" onclick="renderSurvey()">Market needs survey</button>
+    <button class="btn ghost" onclick="renderCompare()">Compare all firms</button>
+    <button class="btn ghost" onclick="renderSurvey()">Market survey</button>
+    <button class="btn ghost" onclick="renderDashboard()">Dashboard</button>
     <button class="btn ghost" onclick="logout()">Sign out</button>
   </div>
   <div id="busyBar" class="agenda" style="display:none;margin-top:12px"></div>`;
@@ -1059,25 +1279,26 @@ function renderFinal(lb){
       </div>
       ${leaderboardHTML(lb)}
       <p class="small muted" style="margin-top:12px">Debrief prompts: Which scorecard dial separated the winner? Who bought technology cheaper than building it, and what did the seller do with the licence income? How did declared vision and target segments match the decision pattern?</p>
-      <div style="margin-top:16px"><button class="btn ghost" onclick="logout()">Sign out</button></div>
+      <div style="margin-top:16px"><button class="btn ghost" onclick="renderDashboard()">Dashboard</button> <button class="btn ghost" onclick="logout()">Sign out</button></div>
     </div>
   </div>`;
 }
 
-/* ---------- Market survey (client-side, needs only cfg) ---------- */
+/* ---------- Market survey ---------- */
 function renderSurvey(){
   stopPoll();setBadge();
-  const q=Math.min(G.quarter,G.cfg.quarters);
+  const cfg=G.cfg;
+  const q=Math.min(G.quarter,cfg.quarters);
   let fc="<table><tr><th>Segment</th>";
-  const qs=[];for(let i=0;i<4&&q+i<=G.cfg.quarters;i++)qs.push(q+i);
+  const qs=[];for(let i=0;i<4&&q+i<=cfg.quarters;i++)qs.push(q+i);
   fc+=qs.map(x=>`<th>Q${x} ${seasonOf(x).f>1?"· festive":seasonOf(x).f<1?"· monsoon":""}</th>`).join("")+"</tr>";
   for(const s of SEGMENTS){
     fc+=`<tr><td>${s.name}</td>`+qs.map(x=>{
-      const tam=G.cfg.tam0*Math.pow(1+G.cfg.growth,x-1)*seasonOf(x).f;
+      const tam=cfg.tam0*Math.pow(1+cfg.growth,x-1)*seasonOf(x).f;
       return `<td>${Math.round(tam*s.pct).toLocaleString("en-IN")}</td>`;}).join("")+"</tr>";
   }
   fc+=`<tr class="total"><td>Category</td>`+qs.map(x=>{
-    const tam=G.cfg.tam0*Math.pow(1+G.cfg.growth,x-1)*seasonOf(x).f;
+    const tam=cfg.tam0*Math.pow(1+cfg.growth,x-1)*seasonOf(x).f;
     return `<td>${Math.round(tam).toLocaleString("en-IN")}</td>`;}).join("")+"</tr></table>";
   const cards=SEGMENTS.map(s=>{
     const nd=SEG_NEEDS[s.id];
@@ -1097,11 +1318,11 @@ function renderSurvey(){
   root.innerHTML=`
   <div class="panel"><div class="panel-hd"><h2>Syndicated market survey · Indian EV scooter category</h2><span class="tag">refreshed each quarter · complimentary in this edition</span></div>
     <div class="panel-bd">
-      <p class="small muted" style="margin-bottom:10px">Customers buy benefits, not components. Star ratings show how much each benefit area matters; discovering the exact response functions behind them is your job in the market. Growth ${Math.round(G.cfg.growth*100)}%/quarter with festive (x1.25) and monsoon (x0.9) seasonality.</p>
+      <p class="small muted" style="margin-bottom:10px">Customers buy benefits, not components. Star ratings show how much each benefit area matters; discovering the exact response functions behind them is your job in the market. Growth ${Math.round(cfg.growth*100)}%/quarter with festive (x1.25) and monsoon (x0.9) seasonality.</p>
       <label class="f">Category demand forecast (units)</label>
       ${fc}
       <div class="seggrid" style="margin-top:14px">${cards}</div>
-      <div style="margin-top:16px"><button class="btn" onclick="${SESSION.role==='instructor'?'refreshInstructor()':'refreshTeam()'}">Back</button></div>
+      <div style="margin-top:16px"><button class="btn" onclick="${SESSION.role==='instructor'?'onInstructorData(G)':'refreshTeam()'}">Back</button></div>
     </div>
   </div>`;
 }
@@ -1110,12 +1331,12 @@ function renderSurvey(){
    INSTRUCTOR CONSOLE
    ============================================================ */
 async function refreshInstructor(){
-  const r=await api("getGame",{gameId:SESSION.gameId,role:"instructor",pin:SESSION.pin});
-  if(!r.ok){alert(r.error);renderLanding();return;}
+  const r=await api("getGame",withToken({universeId:SESSION.universeId}));
+  if(!r.ok){alert(r.error);renderDashboard();return;}
   onInstructorData(r);
 }
 function onInstructorData(r){
-  G=r;const st=r.state;
+  G=r;SESSION.role="instructor";const st=r.state;
   setBadge(st.phase==="gameover"?"Game over":`Quarter ${Math.min(st.quarter,st.cfg.quarters)} of ${st.cfg.quarters}`);
   const lb=st.teams[0].hist.length?st.teams.map(t=>{
     const rr=t.hist[t.hist.length-1];
@@ -1126,20 +1347,21 @@ function onInstructorData(r){
 
   if(st.phase==="gameover"){
     root.innerHTML="";renderFinal(lb);
-    root.insertAdjacentHTML("beforeend",`<div style="margin-top:10px"><button class="btn ghost" onclick="exportJSON()">Export full game JSON</button><div id="exportArea"></div></div>`);
+    root.insertAdjacentHTML("beforeend",`<div style="margin-top:10px"><button class="btn ghost" onclick="exportJSON()">Export full universe JSON</button><div id="exportArea"></div></div>`);
     return;
   }
   const rows=st.teams.map(t=>`
     <div class="teamrow">
       <span class="tname"><span class="teamdot" style="background:${t.color}"></span>${t.name}
-        ${t.isBot?'<span class="pill bot">BOT</span>':t.registered?'':'<span class="pill warnp">not registered</span>'}</span>
-      <span class="mono small muted">Cash ${fmtL(t.cash)} L · Rep ${t.rep.toFixed(2)} · Cap ${t.capacity.toLocaleString("en-IN")} · ${t.centres} centres${t.players?` · ${t.players}`:""}</span>
+        ${t.isBot?'<span class="pill bot">BOT</span>':(t.members||[]).length?'':'<span class="pill warnp">no members yet</span>'}</span>
+      <span class="mono small muted">Cash ${fmtL(t.cash)} L · Rep ${t.rep.toFixed(2)} · Cap ${t.capacity.toLocaleString("en-IN")} · ${t.centres} centres</span>
       <span>
         ${t.dec.locked?'<span class="pill ok">Locked in</span>':'<span class="pill wait">Pending</span>'}
         ${!t.isBot&&t.dec.locked&&st.phase==="decisions"?`<button class="btn tiny ghost" onclick="unlock(${t.i})">Unlock</button>`:""}
       </span>
-    </div>`).join("");
-  const humanPending=st.teams.filter(t=>!t.isBot&&t.registered&&!t.dec.locked).length;
+    </div>
+    ${!t.isBot?`<div class="small muted" style="margin:-4px 0 8px 18px">${(t.members||[]).map(m=>m.name+" ("+m.email+")").join(", ")||"waiting for students to join"}</div>`:""}`).join("");
+  const humanPending=st.teams.filter(t=>!t.isBot&&(t.members||[]).length&&!t.dec.locked).length;
   const rep=st.reports.length?st.reports[st.reports.length-1]:null;
   const tabs=st.teams.map((t,i)=>`<button class="tab ${ui.resultTab===i?"active":""}" onclick="ui.resultTab=${i};onInstructorData(G)">${t.name}</button>`).join("");
   const tSel=st.teams[Math.min(ui.resultTab,st.teams.length-1)];
@@ -1147,7 +1369,7 @@ function onInstructorData(r){
 
   root.innerHTML=`
   <div class="panel"><div class="panel-hd"><h2>${G.name} · instructor console</h2>
-    <span class="tag">Game ID <b>${SESSION.gameId}</b> · Join code <b>${G.joinCode}</b> · ${seasonOf(st.quarter).label}</span></div>
+    <span class="tag">Universe ID <b>${SESSION.universeId}</b> · Join code <b>${G.joinCode}</b> · ${seasonOf(st.quarter).label} · ${st.teams.filter(t=>!t.isBot).length} human firms</span></div>
     <div class="panel-bd">
       <div class="agenda">${agendaFor(st.quarter,st.cfg.vcQuarter)}</div>
       ${rows}
@@ -1158,8 +1380,10 @@ function onInstructorData(r){
           `<button class="btn big" onclick="openNext()">Open Quarter ${st.quarter} decisions</button>
            <span class="small muted">Results are live on every team's screen.</span>`}
         <button class="btn ghost" onclick="refreshInstructor()">Refresh</button>
+        <button class="btn ghost" onclick="renderCompare()">Compare all firms</button>
         <button class="btn ghost" onclick="renderSurvey()">Market survey</button>
         <button class="btn ghost" onclick="exportJSON()">Export JSON</button>
+        <button class="btn ghost" onclick="renderDashboard()">Dashboard</button>
         <button class="btn ghost" onclick="logout()">Sign out</button>
       </div>
       <div id="exportArea"></div>
@@ -1178,34 +1402,34 @@ function onInstructorData(r){
 }
 async function unlock(i){
   busy(true);
-  await api("unlockTeam",{gameId:SESSION.gameId,pin:SESSION.pin,teamIndex:i});
+  await api("unlockTeam",withToken({universeId:SESSION.universeId,teamIndex:i}));
   refreshInstructor();
 }
 async function runQ(force){
   busy(true,"Running the quarter on the league server...");
-  const r=await api("runQuarter",{gameId:SESSION.gameId,pin:SESSION.pin,force:!!force});
+  const r=await api("runQuarter",withToken({universeId:SESSION.universeId,force:!!force}));
   busy(false);
   if(!r.ok){document.getElementById("runErr").textContent=r.error;return;}
   refreshInstructor();
 }
 async function openNext(){
   busy(true);
-  const r=await api("openNextQuarter",{gameId:SESSION.gameId,pin:SESSION.pin});
+  const r=await api("openNextQuarter",withToken({universeId:SESSION.universeId}));
   busy(false);
   if(!r.ok){alert(r.error);return;}
   refreshInstructor();
 }
 async function exportJSON(){
-  const r=await api("exportState",{gameId:SESSION.gameId,pin:SESSION.pin});
+  const r=await api("exportState",withToken({universeId:SESSION.universeId}));
   if(!r.ok){alert(r.error);return;}
-  document.getElementById("exportArea").innerHTML=`<label class="f" style="margin-top:10px">Full game state (copy for your records / analysis in R)</label>
+  document.getElementById("exportArea").innerHTML=`<label class="f" style="margin-top:10px">Full universe state (copy for your records / analysis in R)</label>
     <textarea class="save" onclick="this.select()" readonly>${JSON.stringify(r.state)}</textarea>`;
 }
 
 /* boot */
 if(typeof API_URL!=="string"||API_URL.indexOf("https://script.google.com")!==0){
   root.innerHTML='<div class="panel"><div class="panel-bd"><b>Setup needed:</b> open index.html and paste your Apps Script Web App URL into the API_URL constant near the top of the file.</div></div>';
-}else renderLanding();
+}else if(SESSION.token){renderDashboard();}else{renderLanding();}
 
 </script>
 </body>
