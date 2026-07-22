@@ -170,10 +170,6 @@
 <div class="foot" id="foot"></div>
 <script>
 "use strict";
-/* ============================================================
-   CONFIGURATION · paste your Apps Script Web App URL here
-   (Deploy > New deployment > Web app > copy the /exec URL)
-   ============================================================ */
 const API_URL="https://script.google.com/macros/s/AKfycbx0KGGWKVBgHP8KDkPJz5su5lHTKOQVIdgRco-fsRhkX0QxAYYsF5wDk-HwItiCisqG/exec";
 
 const CATALOG = {
@@ -500,6 +496,9 @@ let G=null, MY=null;
 let PENDING={rndStarts:[]};
 let ui={editModel:null,resultTab:0,busy:false,view:"landing"};
 let pollTimer=null;
+let autosaveTimer=null;
+function stopPoll(){if(pollTimer){clearInterval(pollTimer);pollTimer=null;}if(autosaveTimer){clearTimeout(autosaveTimer);autosaveTimer=null;}}
+function startPoll(fn,ms){if(pollTimer){clearInterval(pollTimer);pollTimer=null;}pollTimer=setInterval(fn,ms||8000);}
 
 async function api(action,data){
   const res=await fetch(API_URL,{method:"POST",body:JSON.stringify(Object.assign({action},data||{}))});
@@ -512,8 +511,6 @@ function busy(on,label){
   if(b){b.style.display=on?"block":"none";b.textContent=label||"Talking to the league server...";}
 }
 function setBadge(txt){qbadge.textContent=txt||(G?(G.phase==="gameover"?"Game over":`Quarter ${Math.min(G.quarter,G.cfg.quarters)} of ${G.cfg.quarters}`):"")||"EV Venture League";}
-function stopPoll(){if(pollTimer){clearInterval(pollTimer);pollTimer=null;}}
-function startPoll(fn,ms){stopPoll();pollTimer=setInterval(fn,ms||8000);}
 
 /* ============================================================
    AUTH: sign up / log in / dashboard
@@ -630,6 +627,8 @@ async function renderDashboard(){
         </div>
       </div>
       <div style="margin-top:16px"><button class="btn ghost" onclick="logout()">Sign out</button></div>
+      ${r.user.isAdmin?"":`<p class="small muted" style="margin-top:10px"><a href="#" onclick="showClaimAdmin();return false;" style="color:var(--muted)">Platform admin setup</a></p>`}
+      <div id="claimArea"></div>
       <div id="busyBar" class="agenda" style="display:none;margin-top:12px"></div>
     </div>
   </div>`;
@@ -734,7 +733,20 @@ function onTeamData(r){
   if(G.phase==="results"){renderTeamResults();return;}
   if(G.myTeam.dec.locked){renderTeamWaiting();return;}
   MY=JSON.parse(JSON.stringify(G.myTeam));
-  PENDING.rndStarts=MY.rnd.filter(p=>p.qStart===G.quarter).map(p=>({id:p.id,mode:p.mode}));
+  const draft=MY.draft;
+  if(draft){
+    MY.vision=draft.vision||MY.vision;MY.mission=draft.mission||MY.mission;MY.goals=draft.goals||MY.goals;
+    if(draft.prim)MY.prim=draft.prim;if(draft.sec)MY.sec=draft.sec;
+    if(draft.hr)MY.hr=draft.hr;
+    if(Array.isArray(draft.models)&&draft.models.length){
+      const byId={};draft.models.forEach(m=>byId[m.id]=m);
+      MY.models=MY.models.map(m=>byId[m.id]?Object.assign({},m,byId[m.id]):m);
+      const existingIds=new Set(MY.models.map(m=>m.id));
+      draft.models.forEach(m=>{if(!existingIds.has(m.id)){MY.models.push(Object.assign({inv:0,isNew:true},m));existingIds.add(m.id);}});
+    }
+    if(draft.dec)MY.dec=Object.assign({},MY.dec,draft.dec);
+  }
+  PENDING.rndStarts=(draft&&draft.dec&&Array.isArray(draft.dec.rndStarts))?draft.dec.rndStarts:MY.rnd.filter(p=>p.qStart===G.quarter).map(p=>({id:p.id,mode:p.mode}));
   MY.rnd=MY.rnd.filter(p=>p.qStart!==G.quarter);
   ui.editModel=null;
   renderTeamDecision();
@@ -965,6 +977,7 @@ function renderTeamDecision(){
         <button class="btn ghost" onclick="refreshTeam()">Discard edits & reload</button>
         <button class="btn ghost" onclick="renderDashboard()">Dashboard</button>
         <button class="btn ghost" onclick="logout()">Sign out</button>
+        <span class="small muted mono" id="draftIndicator" style="margin-left:auto"></span>
       </div>
       <div id="auditArea"></div>
       <div id="busyBar" class="agenda" style="display:none;margin-top:12px"></div>
@@ -982,6 +995,26 @@ function renderTeamDecision(){
       if((r.offersIn||[]).length!==hadOffers)tNote("A licence offer just arrived. Scroll to the R&D section to respond.");
     }catch(e){}
   },10000);
+  scheduleAutosave();
+}
+function scheduleAutosave(){
+  if(autosaveTimer)clearTimeout(autosaveTimer);
+  autosaveTimer=setTimeout(doAutosave,2500);
+}
+async function doAutosave(){
+  if(!MY||!G||G.myTeam.dec.locked)return;
+  const payload={vision:MY.vision,mission:MY.mission,goals:MY.goals,prim:MY.prim,sec:MY.sec,
+    hr:{sales:MY.hr.sales,plant:MY.hr.plant},
+    models:MY.models.map(m=>({id:m.id,name:m.name,cfg:m.cfg,add:m.add,price:m.price})),
+    dec:{ad:MY.dec.ad,claims:MY.dec.claims,alloc:MY.dec.alloc,prod:MY.dec.prod,
+      quality:MY.dec.quality,expBlocks:MY.dec.expBlocks,newCentres:MY.dec.newCentres,hire:MY.dec.hire,
+      bankTarget:MY.dec.bankTarget,ltIssue:MY.dec.ltIssue,buyIntel:MY.dec.buyIntel,buyClinic:MY.dec.buyClinic,
+      vc:MY.dec.vc,rndStarts:PENDING.rndStarts}};
+  try{
+    const r=await api("saveDraft",withToken({universeId:SESSION.universeId,payload}));
+    const ind=document.getElementById("draftIndicator");
+    if(ind&&r.ok&&!r.ignored)ind.textContent="Draft visible to your instructor · saved "+new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
+  }catch(e){}
 }
 function tNote(msg){const n=document.getElementById("tNotice");if(!n)return;n.innerHTML=msg;n.classList.add("show");clearTimeout(n._t);n._t=setTimeout(()=>n.classList.remove("show"),5000);n.scrollIntoView({block:"nearest"});}
 function readCharter(){
@@ -1379,8 +1412,9 @@ function onInstructorData(r){
         ${t.isBot?'<span class="pill bot">BOT</span>':(t.members||[]).length?'':'<span class="pill warnp">no members yet</span>'}</span>
       <span class="mono small muted">Cash ${fmtL(t.cash)} L · Rep ${t.rep.toFixed(2)} · Cap ${t.capacity.toLocaleString("en-IN")} · ${t.centres} centres</span>
       <span>
-        ${t.dec.locked?'<span class="pill ok">Locked in</span>':'<span class="pill wait">Pending</span>'}
+        ${t.dec.locked?'<span class="pill ok">Locked in</span>':t.draft&&!t.isBot?'<span class="pill wait">Drafting live</span>':'<span class="pill wait">Pending</span>'}
         ${!t.isBot&&t.dec.locked&&st.phase==="decisions"?`<button class="btn tiny ghost" onclick="unlock(${t.i})">Unlock</button>`:""}
+        ${!t.isBot?`<button class="btn tiny ghost" onclick="renderWorkspace(${t.i})">View workspace</button>`:""}
       </span>
     </div>
     ${!t.isBot?`<div class="small muted" style="margin:-4px 0 8px 18px">${(t.members||[]).map(m=>m.name+" ("+m.email+")"+(G.asAdmin?` <a href="#" onclick="adminRemoveMemberInline(${t.i},'${m.userId}','${m.name.replace(/'/g,"")}');return false;" style="color:var(--red)">[remove]</a>`:"")).join(", ")||"waiting for students to join"}</div>`:""}`).join("");
@@ -1422,6 +1456,60 @@ function onInstructorData(r){
     <div class="tabs">${tabs}</div>
     <div class="panel-bd">${rSel?privatePackHTML(tSel,rSel):'<p class="small muted">No results yet.</p>'}</div></div>`:""}`;
   if(st.phase==="decisions")startPoll(refreshInstructor,10000);else stopPoll();
+}
+/* ---------- Mentoring: live team workspace ---------- */
+function teamWorkspaceHTML(t){
+  const isDraft=!t.dec.locked&&t.draft;
+  const src=isDraft?t.draft:{vision:t.vision,mission:t.mission,goals:t.goals,prim:t.prim,sec:t.sec,hr:t.hr,dec:t.dec};
+  const modelsForShow=isDraft?(t.draft.models||[]).map(m=>({name:m.name,cfg:m.cfg,add:m.add||{},price:m.price,inv:0})):t.models;
+  const bikes=modelsForShow.length?modelsForShow.map(m=>{
+    const scores=scoreModel(m,t),cost=unitCost(m);
+    const specs=Object.keys(CATALOG).map(cat=>labelOf(cat,m.cfg[cat])).join(" · ");
+    const addOns=ADDONS.filter(a=>m.add&&m.add[a.id]).map(a=>a.name);
+    return `<div class="modelcard"><div class="bikepreview"><div class="svgwrap">${svgScooter(m,t.color,150)}</div>
+      <div style="flex:1;min-width:200px"><div class="nm">${m.name}</div>
+      <div class="mono small">Unit cost ${fmtRs(cost)} · Price ${fmtRs(m.price)} · Contribution ${fmtRs(m.price-cost)}</div>
+      <div class="qstrip" style="margin-top:6px">${SEGMENTS.map(s=>{const q=qualityFit(scores,s);return `<span class="qchip">${s.name}<br><b>${q.toFixed(2)}</b></span>`;}).join("")}</div>
+      <div class="small muted" style="margin-top:5px">${specs}${addOns.length?" + "+addOns.join(", "):""}</div>
+      </div></div></div>`;
+  }).join(""):'<p class="small muted">No models to show yet.</p>';
+  const d=src.dec||{};
+  const segName=id=>(SEGMENTS.find(s=>s.id===id)||{}).name||"-";
+  return `
+    <div class="notice show" style="background:${isDraft?'var(--amber-tint)':t.dec.locked?'var(--green-tint)':'var(--paper)'};color:${isDraft?'var(--amber)':t.dec.locked?'var(--green-deep)':'var(--muted)'}">
+      ${isDraft?`<b>Live draft — in progress.</b> Last saved ${src.savedAt?new Date(src.savedAt).toLocaleTimeString():"just now"}${src.savedBy?" by "+src.savedBy:""}. This view refreshes automatically as the team edits.`:
+        t.dec.locked?`<b>Locked / submitted</b>${t.dec.lockedBy?" by "+t.dec.lockedBy:""}.`:
+        `<b>No draft yet this quarter.</b> Nothing has been edited or saved since the quarter opened.`}
+    </div>
+    <div class="grid2" style="margin:10px 0">
+      <div><label class="f">Vision</label><div class="small">${src.vision||"<span class='muted'>not written yet</span>"}</div></div>
+      <div><label class="f">Mission</label><div class="small">${src.mission||"<span class='muted'>not written yet</span>"}</div></div>
+    </div>
+    <div class="small mono" style="margin-bottom:10px">Target segments: ${segName(src.prim)} (primary) · ${segName(src.sec)} (secondary) ${src.goals?" · Goals: "+src.goals:""}</div>
+    <h3 class="sect" style="margin-top:6px">Models</h3>
+    ${bikes}
+    <h3 class="sect">Marketing, network, finance snapshot</h3>
+    <div class="cmp-table"><table>
+      <tr><th>Ad budget</th><td>${d.ad!=null?"Rs. "+d.ad+" L":"-"}</td><th>Claims</th><td>${(d.claims||[]).map(k=>CLAIMS[k]).join(", ")||"-"}</td></tr>
+      <tr><th>Sales pkg</th><td>${(src.hr||t.hr).sales}% benchmark</td><th>Plant pkg</th><td>${(src.hr||t.hr).plant}% benchmark</td></tr>
+      <tr><th>Quality spend</th><td>${d.quality!=null?"Rs. "+d.quality+" L":"-"}</td><th>New centres / hires this qtr</th><td>${d.newCentres||0} / ${d.hire||0}</td></tr>
+      <tr><th>Capacity expansion</th><td>${d.expBlocks||0} block(s)</td><th>Bank line target</th><td>${d.bankTarget!=null?"Rs. "+d.bankTarget+" L":"-"}</td></tr>
+      <tr><th>R&D starting</th><td colspan="3">${(d.rndStarts||[]).length?d.rndStarts.map(r=>techById(r.id).name+" ("+r.mode+")").join(", "):"-"}</td></tr>
+    </table></div>`;
+}
+function renderWorkspace(i){
+  stopPoll();
+  const t=G.state.teams[i];
+  root.innerHTML=`
+  <div class="panel"><div class="panel-hd"><h2><span class="teamdot" style="background:${t.color}"></span>${t.name} · mentoring view</h2><span class="tag">instructor/admin only · not visible to other teams</span></div>
+    <div class="panel-bd">${teamWorkspaceHTML(t)}
+      <div style="margin-top:16px"><button class="btn ghost" onclick="onInstructorData(G)">Back to console</button></div>
+    </div>
+  </div>`;
+  startPoll(async()=>{
+    const r=await api("getGame",withToken({universeId:SESSION.universeId}));
+    if(r.ok){G=r;renderWorkspace(i);}
+  },6000);
 }
 async function unlock(i){
   busy(true);
