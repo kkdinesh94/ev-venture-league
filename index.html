@@ -1722,5 +1722,166 @@ async function adminDelete(universeId,name){
 }
 
 </script>
+
+<style id="evl-tips-style">
+  .evl-q{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;
+    border-radius:50%;border:1px solid var(--line);color:var(--muted);font-size:9px;font-weight:700;
+    margin-left:6px;cursor:help;vertical-align:1px;background:var(--card);user-select:none}
+  .evl-q:hover,.evl-q.on{background:var(--green);border-color:var(--green);color:#fff}
+  .evl-pop{position:fixed;z-index:9999;max-width:290px;background:var(--ink);color:#fff;
+    border-radius:8px;padding:10px 12px;font-size:12.5px;line-height:1.45;
+    box-shadow:0 8px 28px rgba(0,0,0,.28);pointer-events:none;opacity:0;transition:opacity .12s}
+  .evl-pop.on{opacity:1}
+  .evl-pop b{display:block;font-size:12px;margin-bottom:4px;color:#4FCFAF;
+    text-transform:uppercase;letter-spacing:.08em}
+  .evl-tier{margin-top:5px}
+  .evl-bar{display:flex;gap:3px;height:5px}
+  .evl-bar i{flex:1;background:var(--line);border-radius:2px;transition:background .25s}
+  .evl-bar i.on{background:var(--green)}
+  .evl-lab{font-size:10px;color:var(--muted);margin-top:3px;letter-spacing:.03em}
+  .evl-lab.up{color:var(--green);font-weight:700}
+  .evl-lab.down{color:var(--amber);font-weight:700}
+</style>
+<script>
+(function(){
+  var TIPS = {
+    "Powertrain":["Motor power","Drives acceleration and top speed. Higher power lifts appeal for Performance-led segments and unlocks the faster riding modes, but it costs more per unit and cuts range from the same battery."],
+    "Riding modes":["Selectable modes","Cheap way to add perceived sophistication. Each mode needs a powertrain strong enough to deliver it, so a weak motor greys the better modes out."],
+    "Battery / charging":["Range and charge time","The single biggest cost in the bill of materials and the benefit most segments rate highest. Commuters want range; fleet buyers want fast charging above all."],
+    "Connected tech":["Instrumentation","Screen, app and connectivity. Cheap relative to its effect on younger and premium buyers. Almost irrelevant to value-first buyers, who will not pay for it."],
+    "Build / body":["Frame and panels","Sets perceived quality and durability. A premium build lifts brand judgment across every segment but raises unit cost on every single vehicle you sell."],
+    "Wheels":["Wheel type and size","Affects ride comfort and looks. A visible, low-cost upgrade, which makes it one of the better value-for-money choices on this screen."],
+    "Brakes":["Braking system","Safety is judged by every segment and penalised hard when it is weak. Disc and ABS options cost little against the reputational damage of being seen as unsafe."],
+    "Seat":["Seat and ergonomics","Comfort matters most to commuters covering distance daily and to fleet riders on the vehicle all day. Barely registers with enthusiasts."],
+    "Suspension":["Suspension","Ride quality on poor roads. Undervalued by students and valued highly by commuter and fleet buyers, who feel it on every journey."],
+ 
+    "Vision":["Where you are going","Your own statement of intent. Not scored directly, but it is what you will be held to in the debrief when your decisions contradict it."],
+    "Mission":["What you do, for whom, how","Forces you to name a target customer before you design for them. Teams that skip this design for everyone and win nobody."],
+    "Top three goals":["Ranked objectives","Rank them honestly. Chasing share and profit and quality at once in early quarters is how firms run out of cash."],
+ 
+    "Primary target segment":["Main customer group","Your design, price and advertising are judged against this segment's stated priorities. Choose before you configure the vehicle, not after."],
+    "Secondary target segment":["Second customer group","Market performance is measured across both target segments. A second segment widens demand but splits your design compromises."],
+    "Campaign claims":["What your ads promise","Claims are scored on two things: whether the segment values them, and whether your vehicle can actually deliver them. Claiming what you do not have is penalised as deceptive."],
+    "Ad budget":["Media spend this quarter","Returns diminish. Doubling spend does not double awareness. Spend enough to be noticed in your segment, then put the money into the product."],
+    "Allocation across segments":["Where the ad money goes","Must total 100%. Money aimed at a segment you did not design for is money spent making people reject you."],
+ 
+    "Experience centres":["Retail presence","Rs. 40 L to open and a running cost every quarter thereafter. More centres mean more walk-ins, but an under-staffed centre converts badly and still costs you full price."],
+    "Sales staff":["Sales headcount","Converts walk-ins into sales. Too few and you lose customers who arrived ready to buy. Too many and you carry payroll against traffic that is not there."],
+    "Sales staff package":["Pay relative to industry","Judged against what every other firm is paying this quarter, not against a fixed number. Paying the median means average productivity, whatever the rupee figure."],
+    "Plant workers package":["Pay relative to benchmark","Drives manufacturing productivity, which is one of the nine scorecard measures. Cutting it is the classic false economy in this simulation."],
+ 
+    "Category demand forecast":["Your production plan","Everything downstream follows this number. Forecast too low and you stock out, losing sales and goodwill. Too high and you carry inventory you paid to build."],
+    "Expand capacity":["Buying more plant","Capacity bought this quarter is available next quarter, so it must be ordered before you need it. Unused capacity is charged against you."],
+    "Quality improvement spend":["Reliability programme","Cuts failure rates and warranty cost, and lifts the reliability judgment that feeds manufacturing productivity. Effects build over several quarters, so starting late wastes the money."],
+ 
+    "Bank credit line":["Short-term borrowing","Limited by your equity. Cheaper than an emergency loan, which is drawn automatically at punitive interest if your cash closes negative."],
+    "Issue 5-year bond":["Long-term debt","Cheaper than equity and does not dilute you, but it raises financial risk, which is scored. There is a limit tied to your equity."],
+    "Ask":["Capital requested","Ask for what the plan needs. Too little and you cannot execute it. Too much and the partners question whether you understand your own business."],
+    "Equity offered":["Share of the company","This sets your valuation. Offering more equity for the same money means you are worth less. Work out the implied valuation before you submit."],
+ 
+    "Market size / quarter":["Total units available","Scale this with the number of firms, not the number of students. Too large and nobody has to compete."],
+    "Quarters":["Length of the game","Eight for a single session or a compact exercise. Twelve or more for a term-long league."],
+    "VC round in quarter":["When funding opens","Teams need enough trading history to have something to show. Quarter 5 is the usual choice."],
+    "Fee":["Licence fee","What you charge a rival for your technology. They can refuse. Price it against what it saves them, not what it cost you."],
+    "Universe ID":["Your section's code","Given to you by your instructor along with the join code."],
+    "Join code":["Your section's password","Both this and the Universe ID are needed to join."]
+  };
+ 
+  function findTip(txt){
+    txt = (txt||"").trim();
+    if (TIPS[txt]) return TIPS[txt];
+    for (var k in TIPS) if (txt.indexOf(k) === 0) return TIPS[k];
+    return null;
+  }
+ 
+  var pop = document.createElement("div");
+  pop.className = "evl-pop";
+  document.body.appendChild(pop);
+ 
+  function show(el, tip){
+    pop.innerHTML = "<b>" + tip[0] + "</b>" + tip[1];
+    pop.classList.add("on");
+    var r = el.getBoundingClientRect();
+    var top = r.bottom + 8, left = Math.min(r.left, window.innerWidth - 305);
+    if (top + pop.offsetHeight > window.innerHeight) top = r.top - pop.offsetHeight - 8;
+    pop.style.top = Math.max(8, top) + "px";
+    pop.style.left = Math.max(8, left) + "px";
+  }
+  function hide(){ pop.classList.remove("on"); }
+  document.addEventListener("scroll", hide, true);
+ 
+  var lastTier = {};
+ 
+  function enhance(){
+    /* --- tooltips on every labelled field --- */
+    var labels = document.querySelectorAll("label.f:not([data-evl])");
+    for (var i = 0; i < labels.length; i++){
+      var L = labels[i];
+      L.setAttribute("data-evl", "1");
+      var tip = findTip(L.textContent);
+      if (!tip) continue;
+      var q = document.createElement("span");
+      q.className = "evl-q"; q.textContent = "?";
+      (function(el, t){
+        el.addEventListener("mouseenter", function(){ show(el, t); });
+        el.addEventListener("mouseleave", hide);
+        el.addEventListener("click", function(e){
+          e.preventDefault(); e.stopPropagation();
+          if (pop.classList.contains("on")) hide(); else show(el, t);
+        });
+      })(q, tip);
+      L.appendChild(q);
+    }
+ 
+    /* --- tier bar under each component dropdown --- */
+    if (typeof CATALOG === "undefined") return;
+    var sels = document.querySelectorAll(".cfgrow select:not([data-evl])");
+    for (var j = 0; j < sels.length; j++){
+      (function(S){
+        S.setAttribute("data-evl", "1");
+        var oc = S.getAttribute("onchange") || "";
+        var m = oc.match(/setCfg\((\d+),'([^']+)'/);
+        if (!m) return;
+        var mi = m[1], cat = m[2], c = CATALOG[cat];
+        if (!c) return;
+ 
+        var wrap = document.createElement("div");
+        wrap.className = "evl-tier";
+        var bar = document.createElement("div"); bar.className = "evl-bar";
+        for (var k = 0; k < c.opts.length; k++) bar.appendChild(document.createElement("i"));
+        var lab = document.createElement("div"); lab.className = "evl-lab";
+        wrap.appendChild(bar); wrap.appendChild(lab);
+        S.parentNode.appendChild(wrap);
+ 
+        function paint(flash){
+          var idx = 0;
+          for (var k = 0; k < c.opts.length; k++) if (c.opts[k].id === S.value) idx = k;
+          var tier = c.opts.length - idx;          // opts are listed best first
+          var bits = bar.children;
+          for (var k = 0; k < bits.length; k++)
+            bits[k].className = (k < tier) ? "on" : "";
+          var key = mi + "|" + cat, prev = lastTier[key];
+          lab.className = "evl-lab";
+          lab.textContent = "Tier " + tier + " of " + c.opts.length +
+            (tier === c.opts.length ? " · highest spec" : tier === 1 ? " · lowest spec" : "");
+          if (flash && prev !== undefined && prev !== tier){
+            var up = tier > prev;
+            lab.className = "evl-lab " + (up ? "up" : "down");
+            lab.textContent = (up ? "UPGRADED" : "DOWNGRADED") + " · tier " + prev + " to " + tier;
+            setTimeout(function(){ paint(false); }, 2000);
+          }
+          lastTier[key] = tier;
+        }
+ 
+        S.addEventListener("change", function(){ setTimeout(function(){ paint(true); }, 60); });
+        paint(false);
+      })(sels[j]);
+    }
+  }
+ 
+  setInterval(enhance, 600);
+  enhance();
+})();
+</script>
 </body>
 </html>
