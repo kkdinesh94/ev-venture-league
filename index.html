@@ -668,7 +668,7 @@ async function renderDashboard(){
             <span class="pill ${u.status==='open'?'ok':u.status==='results'?'wait':'bot'}">${u.status}</span>
             <button class="btn ghost" onclick="openUniverse('${u.universeId}')">Open console</button></span></div>`).join(""):
             '<p class="small muted">None yet.</p>'}
-          <button class="btn" onclick="renderCreate()">Create a new universe</button>
+          ${r.user.isAdmin?`<button class="btn" onclick="renderCreate()">Create a new universe</button>`:""}
         </div>
         <div>
           <h2 class="sect" style="margin-top:0">Teams you're on</h2>
