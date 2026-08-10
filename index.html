@@ -1615,7 +1615,8 @@ let adminData={users:[],universes:[],tab:"universes"};
 async function renderAdminConsole(){
   stopPoll();setBadge("Platform admin");
   busy(true);
-  const [ru,rg]=await Promise.all([api("adminListUsers",withToken()),api("adminListUniverses",withToken())]);
+  const ru=await api("adminListUsers",withToken());
+  const rg=await api("adminListUniverses",withToken());
   busy(false);
   if(!ru.ok){alert(ru.error);renderDashboard();return;}
   adminData.users=ru.users;adminData.universes=rg.universes||[];
