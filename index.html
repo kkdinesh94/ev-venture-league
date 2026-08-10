@@ -690,7 +690,7 @@ async function renderDashboard(){
       <div id="busyBar" class="agenda" style="display:none;margin-top:12px"></div>
     </div>
   </div>`;
-  document.getElementById("foot").innerHTML="<b>EV Venture League</b> · one universe holds up to 10 firms, each with up to 6 people. Decisions are private to a team, the simulation runs on the league server, results publish to everyone when the instructor closes the quarter.";
+  document.getElementById("foot").innerHTML="<b>EV Venture League</b> · one universe holds up to 10 firms, each with up to 8 people. Decisions are private to a team, the simulation runs on the league server, results publish to everyone when the instructor closes the quarter.";
 }
 async function lookupUniverse(){
   const universeId=document.getElementById("jUid").value.trim().toUpperCase();
@@ -737,7 +737,7 @@ function renderCreate(){
     </div>`;
   }
   root.innerHTML=`
-  <div class="panel"><div class="panel-hd"><h2>Create a new universe</h2><span class="tag">up to 10 firms, up to 6 people each · students self-register with the join code</span></div>
+  <div class="panel"><div class="panel-hd"><h2>Create a new universe</h2><span class="tag">up to 10 firms, up to 8 people each · students self-register with the join code</span></div>
     <div class="panel-bd">
       <div class="setuprow"><div><label class="f">Universe name</label><input id="gName" value="EV Venture League" style="width:280px"></div></div>
       ${rows}
@@ -746,7 +746,7 @@ function renderCreate(){
         <div><label class="f">Market size / quarter (units)</label><input id="tam" type="number" value="20000" style="width:110px"></div>
         <div><label class="f">VC round in quarter</label><select id="vcq"><option>4</option><option selected>5</option><option>6</option><option>7</option><option>8</option></select></div>
       </div>
-      <p class="small muted" style="margin:8px 0 14px">For a full class of ~60, use up to 10 human teams of up to 6 and a market size around 20,000-30,000 units/quarter so every firm has room to find a segment. Each firm starts with Rs. 25 Cr of founders' capital, one launched model, 4 experience centres, 20 sales staff, and 5% awareness in every segment. In Quarter 1 each firm writes its vision and mission and declares target segments. Performance is judged on an ASCM-style balanced scorecard.</p>
+      <p class="small muted" style="margin:8px 0 14px">For a full class of ~60, use up to 10 human teams of up to 8 and a market size around 20,000-30,000 units/quarter so every firm has room to find a segment. Each firm starts with Rs. 25 Cr of founders' capital, one launched model, 4 experience centres, 20 sales staff, and 5% awareness in every segment. In Quarter 1 each firm writes its vision and mission and declares target segments. Performance is judged on an ASCM-style balanced scorecard.</p>
       <button class="btn big" onclick="doCreate()">Create universe</button>
       <button class="btn ghost" onclick="renderDashboard()">Back</button>
       <div class="warn" id="cErr"></div>
