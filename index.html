@@ -1854,9 +1854,9 @@ async function adminDelete(universeId,name){
         S.parentNode.appendChild(wrap);
  
         function paint(flash){
-          var idx = 0;
-          for (var k = 0; k < c.opts.length; k++) if (c.opts[k].id === S.value) idx = k;
-          var tier = c.opts.length - idx;          // opts are listed best first
+          var sorted = c.opts.slice().sort(function(a,b){ return a.cost - b.cost; });
+          var tier = 1;
+          for (var k = 0; k < sorted.length; k++) if (sorted[k].id === S.value) tier = k + 1;
           var bits = bar.children;
           for (var k = 0; k < bits.length; k++)
             bits[k].className = (k < tier) ? "on" : "";
